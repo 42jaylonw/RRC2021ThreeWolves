@@ -14,7 +14,8 @@ def main():
     env = RLPositionHistoryEnv(goal_trajectory=None,
                                visualization=True)
     print(os.listdir())
-    log_dir = f"three_wolves/three_wolves/model_save/triangle_cube_tg/"
+    os.makedirs('IANHERE')
+    log_dir = f"model_save/triangle_cube_tg/"
     policy = SAC.load(log_dir + "best_model.zip")
 
     observation = env.reset()
