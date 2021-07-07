@@ -14,8 +14,9 @@ def main():
     env = RLPositionHistoryEnv(goal_trajectory=None,
                                visualization=True)
 
-    print(os.listdir('../../'))
-    print(os.listdir('../../../'))
+    print(os.listdir('../../userhome'))
+    print(os.listdir('../../home'))
+    print(os.listdir('../../home'))
     # for (dirpath, dirnames, filenames) in os.walk(os.curdir):
     #     print([os.path.join(dirpath, file) for file in filenames])
 
