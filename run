@@ -15,11 +15,6 @@ def main():
                                visualization=False)
 
     print(os.listdir('../../userhome/three_wolves'))
-    print(os.listdir('../../home'))
-    print(os.listdir('../../home'))
-    # for (dirpath, dirnames, filenames) in os.walk(os.curdir):
-    #     print([os.path.join(dirpath, file) for file in filenames])
-
     log_dir = f"../../userhome/three_wolves/model_save/triangle_cube_tg/"
     policy = SAC.load(log_dir + "best_model.zip")
 
