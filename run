@@ -13,9 +13,11 @@ def main():
 
     env = RLPositionHistoryEnv(goal_trajectory=None,
                                visualization=True)
-    print(os.listdir())
-    os.makedirs('IANHERE')
-    log_dir = f"model_save/triangle_cube_tg/"
+
+    for (dirpath, dirnames, filenames) in os.walk(os.curdir):
+        print([os.path.join(dirpath, file) for file in filenames])
+
+    log_dir = f"three_wolves/model_save/triangle_cube_tg/"
     policy = SAC.load(log_dir + "best_model.zip")
 
     observation = env.reset()
