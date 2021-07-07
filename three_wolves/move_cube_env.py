@@ -4,6 +4,7 @@ import gym
 from trifinger_simulation import TriFingerPlatform, trifingerpro_limits, visual_objects
 from trifinger_simulation.tasks import move_cube_on_trajectory as task
 from three_wolves.utils import *
+import numpy as np
 
 class ActionType(enum.Enum):
     """Different action types that can be used to control the robot."""
@@ -252,12 +253,12 @@ class BaseCubeTrajectoryEnv(gym.GoalEnv):
         return robot_action
 
 class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
-    def __init__(self, goal_trajectory, visualization, evaluation, history_num=3):
+    def __init__(self, goal_trajectory, visualization, history_num=3):
         super(RLPositionHistoryEnv, self).__init__(
             goal_trajectory=goal_trajectory, action_type=ActionType.POSITION, step_size=100)
 
         # env params
-        self.evaluation = evaluation
+        # self.evaluation = evaluation
         self.visualization = visualization
 
         # policy params
@@ -389,6 +390,7 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
         TipForceBalance = self.GraspPenalty(obs_dict)
         SlipperyPenalty = self.SlipperyPenalty()
         TipTriangle = self.TipTriangle(obs_dict)
+
         total_reward = ReachReward + NotNear + TipForceBalance + SlipperyPenalty + TipTriangle
         return total_reward
 
@@ -428,13 +430,19 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
         obs_dict, eval_score = self._apply_action(action)
         self.observer.update(obs_dict)
         reward = self.get_reward(obs_dict)
+        # if self.evaluation:
+        #     done = max_episode
+        #     # reward = eval_score
+        # else:
+        if self.IsFar(obs_dict):
+            while not self.IsNear(obs_dict):
+                _pre_action = self.tri_to_cube(obs_dict)
+                obs_dict, _ = self._apply_action(_pre_action)
+                if self.step_count >= task.EPISODE_LENGTH:
+                    break
         max_episode = self.step_count >= task.EPISODE_LENGTH
-
-        if self.evaluation:
-            done = max_episode
-            # reward = eval_score
-        else:
-            done = max_episode or self.IsFar(obs_dict)
+        done = max_episode
+        self.info['eval_score'] = eval_score
 
         return self.observer.get_history_obs(), reward, done, self.info
 
@@ -482,7 +490,7 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
         tri_distance = [compute_dist(obs_dict['finger_0_position'], cube_pos),
                         compute_dist(obs_dict['finger_1_position'], cube_pos),
                         compute_dist(obs_dict['finger_2_position'], cube_pos)]
-        return any(np.array(tri_distance) > 0.08)
+        return any(np.array(tri_distance) > 0.1)
 
     @staticmethod
     def IsGrasp(obs_dict):
@@ -521,3 +529,17 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
         t1_t2 = compute_dist(tip_1, tip_2)
         triangle_xyz_penalty = exp_mini(Delta([t0_t1, t0_t2, t1_t2]), wei=-1000)
         return triangle_xyz_penalty * 10
+
+
+if __name__ == '__main__':
+    env = RLPositionHistoryEnv(goal_trajectory=None,
+                               visualization=True)
+
+    observation = env.reset()
+    t = 0
+    is_done = False
+    while not is_done:
+        observation, reward, is_done, info = env.step(np.random.uniform(env.action_space.low,
+                                                                        env.action_space.high))
+        t = info["time_index"]
+        print("reward:", reward)
