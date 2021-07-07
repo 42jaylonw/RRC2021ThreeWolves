@@ -12,15 +12,15 @@ def main():
     # goal_trajectory = json.loads(goal_json)
 
     env = RLPositionHistoryEnv(goal_trajectory=None,
-                               visualization=True)
+                               visualization=False)
 
-    print(os.listdir('../../userhome'))
+    print(os.listdir('../../userhome/three_wolves'))
     print(os.listdir('../../home'))
     print(os.listdir('../../home'))
     # for (dirpath, dirnames, filenames) in os.walk(os.curdir):
     #     print([os.path.join(dirpath, file) for file in filenames])
 
-    log_dir = f"three_wolves/model_save/triangle_cube_tg/"
+    log_dir = f"../../userhome/three_wolves/model_save/triangle_cube_tg/"
     policy = SAC.load(log_dir + "best_model.zip")
 
     observation = env.reset()
