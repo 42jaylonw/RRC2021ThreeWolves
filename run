@@ -48,11 +48,7 @@ def main():
     # log_dir = f"../../userhome/three_wolves/model_save/triangle_cube_tg/best_model.zip"
     # log_dir = get_model_from_git()
     print(os.listdir('../../'), '\n\n\n')
-    f = ['ws/src', 'usr/src']
-    for dir_name in f:
-        if '.' not in dir_name:
-            print(f'\n\n{dir_name}\n')
-            print(os.listdir(f'../../{dir_name}'))
+    print(os.listdir('ws/src/usercode'))
     log_dir = None
     policy = SAC.load(log_dir)
 
