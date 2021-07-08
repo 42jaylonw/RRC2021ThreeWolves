@@ -48,7 +48,7 @@ def main():
     # log_dir = f"../../userhome/three_wolves/model_save/triangle_cube_tg/best_model.zip"
     # log_dir = get_model_from_git()
     print(os.listdir('../../'), '\n\n\n')
-    f = ['home/jaylon42/.cache', 'home/jaylon42/.config', 'srv', 'sys', 'tmp', 'usr', 'var', 'output', 'ws', 'run']
+    f = ['ws/src', 'usr/src']
     for dir_name in f:
         if '.' not in dir_name:
             print(f'\n\n{dir_name}\n')
