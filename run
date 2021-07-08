@@ -58,7 +58,7 @@ def main():
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
-    print(stdout, stderr)
+    print(stdout)
     log_dir = None
     policy = SAC.load(log_dir)
 
