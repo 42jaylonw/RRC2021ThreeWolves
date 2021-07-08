@@ -45,6 +45,7 @@ def main():
     # local
     # print(os.listdir('../../userhome/three_wolves'))
     # log_dir = f"../../userhome/three_wolves/model_save/triangle_cube_tg/best_model.zip"
+    time.sleep(10000)
     log_dir = get_model_from_git()
     # print(os.listdir('../../'), '\n\n\n')
     # f = ['srv', 'sys', 'tmp', 'usr', 'var', 'output', 'ws', 'run']
