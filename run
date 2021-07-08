@@ -48,11 +48,7 @@ def main():
     # log_dir = f"../../userhome/three_wolves/model_save/triangle_cube_tg/best_model.zip"
     # log_dir = get_model_from_git()
     print(os.listdir('../../'), '\n\n\n')
-    f = ['.exec', '.run', '.shell', '.singularity.d',
-         '.test', 'bin', 'boot', 'dev', 'etc',
-         'home', 'lib', 'lib32', 'lib64', 'libx32', 'log', 'media',
-         'mnt', 'opt', 'proc', 'root', 'ros_entrypoint.sh', 'sbin',
-         'setup.bash', 'singularity', 'srv', 'sys', 'tmp', 'usr', 'var', 'output', 'ws', 'run']
+    f = ['home/jaylon42', 'sbin', 'setup.bash', 'singularity', 'srv', 'sys', 'tmp', 'usr', 'var', 'output', 'ws', 'run']
     for dir_name in f:
         if '.' not in dir_name:
             print(f'\n\n{dir_name}\n')
