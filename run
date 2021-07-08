@@ -8,6 +8,32 @@ from stable_baselines3 import SAC
 # from subprocess import check_output
 import subprocess
 
+
+def get_model_from_git():
+
+    def run(cmd):
+        process = subprocess.Popen(cmd,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        print(stdout, stderr)
+    # subprocess.run("git", "config", "--global", "--unset", "http.proxy")
+    # subprocess.run("git", "config", "--global", "user.name", "42jaylonw")
+    # subprocess.run("git", "config", "--global", "user.email", "42jaylonw@gmail.com")
+    # process = subprocess.Popen(['git', 'clone', 'https://github.com/42jaylonw/trifinger_model.git'],
+    #                            stdout=subprocess.PIPE,
+    #                            stderr=subprocess.PIPE)
+    # stdout, stderr = process.communicate()
+    # print(stdout, stderr)
+    # print(os.listdir())
+    run(["git", "config", "--global", "--unset-all", "http.proxy"])
+    run(["git", "config", "--global", "user.name", "42jaylonw"])
+    run(["git", "config", "--global", "user.email", "42jaylonw@gmail.com"])
+    run(['git', 'clone', 'git@github.com:42jaylonw/trifinger_model.git'])
+    print(os.listdir())
+    return "trifinger_model/triangle_cube_tg/best_model.zip"
+
+
 def main():
     # the goal is passed as JSON string
     # goal_json = sys.argv[1]
@@ -16,19 +42,10 @@ def main():
     env = RLPositionHistoryEnv(goal_trajectory=None,
                                visualization=False)
 
+    # local
     # print(os.listdir('../../userhome/three_wolves'))
     # log_dir = f"../../userhome/three_wolves/model_save/triangle_cube_tg/best_model.zip"
-    # log_dir = "three_wolves/model_save/triangle_cube_tg/best_model.zip"
-    # cmd = '!git clone https://github.com/42jaylonw/trifinger_model.git'
-    # check_output(cmd, shell=True).decode()
-    # process = subprocess.Popen(['git', 'clone', 'https://github.com/42jaylonw/trifinger_model.git'])
-    process = subprocess.Popen(['git', 'clone', 'https://github.com/42jaylonw/trifinger_model.git'],
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
-    stdout, stderr = process.communicate()
-    print(stdout, stderr)
-    print(os.listdir())
-    log_dir = "trifinger_model/triangle_cube_tg/best_model.zip"
+    log_dir = get_model_from_git()
     policy = SAC.load(log_dir)
 
     observation = env.reset()
