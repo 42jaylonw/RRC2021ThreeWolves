@@ -47,15 +47,16 @@ def main():
     # print(os.listdir('../../userhome/three_wolves'))
     # log_dir = f"../../userhome/three_wolves/model_save/triangle_cube_tg/best_model.zip"
     # log_dir = get_model_from_git()
-    # print(os.listdir('../../'))
+    print(os.listdir('../../'), '\n\n\n')
     f = ['.exec', '.run', '.shell', '.singularity.d',
          '.test', 'bin', 'boot', 'dev', 'environment', 'etc',
          'home', 'lib', 'lib32', 'lib64', 'libx32', 'log', 'media',
-         'mnt', 'opt', 'proc', 'root', 'ros_entrypoint.sh', 'run', 'sbin',
-         'setup.bash', 'singularity', 'srv', 'sys', 'tmp', 'usr', 'var', 'userhome', 'output', 'ws']
+         'mnt', 'opt', 'proc', 'root', 'ros_entrypoint.sh', 'sbin',
+         'setup.bash', 'singularity', 'srv', 'sys', 'tmp', 'usr', 'var', 'output', 'ws', 'run']
     for dir_name in f:
-        print(f'\n\n{dir_name}\n')
-        print(os.listdir(f'../../{dir_name}'))
+        if '.' not in dir_name:
+            print(f'\n\n{dir_name}\n')
+            print(os.listdir(f'../../{dir_name}'))
     log_dir = None
     policy = SAC.load(log_dir)
 
