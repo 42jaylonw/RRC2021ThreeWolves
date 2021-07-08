@@ -47,8 +47,18 @@ def main():
     # print(os.listdir('../../userhome/three_wolves'))
     # log_dir = f"../../userhome/three_wolves/model_save/triangle_cube_tg/best_model.zip"
     # log_dir = get_model_from_git()
-    print(os.listdir('../../'), '\n\n\n')
-    print(os.listdir('ws/src/usercode'))
+    # print(os.listdir('../../'), '\n\n\n')
+    # f = ['srv', 'sys', 'tmp', 'usr', 'var', 'output', 'ws', 'run']
+    # for dir_name in f:
+    #     if '.' not in dir_name:
+    #         print(f'\n\n{dir_name}\n')
+    #         print(os.listdir(f'../../{dir_name}'))
+
+    process = subprocess.Popen(['find', '../../', 'best_model.zip'],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    print(stdout, stderr)
     log_dir = None
     policy = SAC.load(log_dir)
 
