@@ -26,12 +26,13 @@ def get_model_from_git():
     # stdout, stderr = process.communicate()
     # print(stdout, stderr)
     # print(os.listdir())
-    run(["git", "config", "--global", "--unset-all", "http.proxy"])
-    run(["git", "config", "--global", "user.name", "42jaylonw"])
-    run(["git", "config", "--global", "user.email", "42jaylonw@gmail.com"])
-    run(['git', 'clone', 'git@github.com:42jaylonw/trifinger_model.git'])
+    # run(["git", "config", "--global", "--unset-all", "http.proxy"])
+    # run(["git", "config", "--global", "user.name", "42jaylonw"])
+    # run(["git", "config", "--global", "user.email", "42jaylonw@gmail.com"])
+    # run(['git', 'clone', 'git@github.com:42jaylonw/trifinger_model.git'])
+    run(['wget', "https://github.com/42jaylonw/trifinger_model/blob/master/triangle_cube_tg/best_model.zip"])
     print(os.listdir())
-    return "trifinger_model/triangle_cube_tg/best_model.zip"
+    return "three_wolves/model_save/triangle_cube_tg/best_model.zip"
 
 
 def main():
@@ -45,7 +46,9 @@ def main():
     # local
     # print(os.listdir('../../userhome/three_wolves'))
     # log_dir = f"../../userhome/three_wolves/model_save/triangle_cube_tg/best_model.zip"
-    log_dir = get_model_from_git()
+    # log_dir = get_model_from_git()
+    print(os.listdir('../../'))
+    log_dir = None
     policy = SAC.load(log_dir)
 
     observation = env.reset()
