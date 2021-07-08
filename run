@@ -30,7 +30,7 @@ def get_model_from_git():
     run(["git", "config", "--global", "user.name", "42jaylonw"])
     run(["git", "config", "--global", "user.email", "42jaylonw@gmail.com"])
     run(['git', 'clone', 'git@github.com:42jaylonw/rrc_2021_three_wolves.git'])
-    run(['wget', 'https://github.com/42jaylonw/rrc_2021_three_wolves/blob/master/three_wolves/model_save/triangle_cube_tg/best_model.zip'])
+    run(['wget', 'https://github.com/42jaylonw/trifinger_model/blob/master/triangle_cube_tg/best_model.zip'])
     print(os.listdir())
     return "rrc_2021_three_wolves/three_wolves/model_save/triangle_cube_tg/best_model.zip"
 
