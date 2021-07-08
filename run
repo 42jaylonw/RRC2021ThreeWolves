@@ -23,6 +23,7 @@ def get_model_from_git():
     # run(["git", "config", "--global", "user.email", "42jaylonw@gmail.com"])
     # run(['git', 'clone', 'git@github.com:42jaylonw/rrc_2021_three_wolves.git'])
     # run(['wget', 'https://github.com/42jaylonw/trifinger_model/blob/master/triangle_cube_tg/best_model.zip'])
+    time.sleep(10000)
     run(['wget', '--no-check-certificate',
          "'https://docs.google.com/uc?export=download&id=1V2grWmVCtEdl_2-B0d_VLPzNcJVhCrRZ'",
          '-O', 'best_model.zip'])
