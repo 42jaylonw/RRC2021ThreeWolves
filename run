@@ -30,6 +30,7 @@ def get_model_from_git():
     run(["git", "config", "--global", "user.name", "42jaylonw"])
     run(["git", "config", "--global", "user.email", "42jaylonw@gmail.com"])
     run(['git', 'clone', 'git@github.com:42jaylonw/rrc_2021_three_wolves.git'])
+    run(['wget', 'https://github.com/42jaylonw/rrc_2021_three_wolves/blob/master/three_wolves/model_save/triangle_cube_tg/best_model.zip'])
     print(os.listdir())
     return "rrc_2021_three_wolves/three_wolves/model_save/triangle_cube_tg/best_model.zip"
 
@@ -52,13 +53,6 @@ def main():
     #     if '.' not in dir_name:
     #         print(f'\n\n{dir_name}\n')
     #         print(os.listdir(f'../../{dir_name}'))
-
-    # process = subprocess.Popen(['find', '../../', 'best_model.zip'],
-    #                            stdout=subprocess.PIPE,
-    #                            stderr=subprocess.PIPE)
-    # stdout, stderr = process.communicate()
-    # print(stdout)
-    # log_dir = None
     policy = SAC.load(log_dir)
 
     observation = env.reset()
