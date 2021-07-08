@@ -7,23 +7,6 @@ import time
 
 from three_wolves.move_cube_env import RLPositionHistoryEnv
 from stable_baselines3 import SAC
-# from subprocess import check_output
-import subprocess
-# import wget
-
-def get_model_from_git():
-    def run(cmd):
-        process = subprocess.Popen(cmd,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-        print(stdout.decode(), stderr.decode())
-    os.system('wget --no-check-certificate '
-              '\'https://docs.google.com/uc?export=download&id=1V2grWmVCtEdl_2-B0d_VLPzNcJVhCrRZ\' '
-              '-O best_model.zip')
-    print(os.listdir())
-    return "./best_model.zip"
-
 
 def main():
     # the goal is passed as JSON string
@@ -32,22 +15,8 @@ def main():
 
     env = RLPositionHistoryEnv(goal_trajectory=None,
                                visualization=False)
-
-    # local
-    # print(os.listdir('../../'))
-    # log_dir = f"../../userhome/three_wolves/model_save/triangle_cube_tg/best_model.zip"
-    log_dir = get_model_from_git()
-    # print(os.listdir('../../'), '\n\n\n')
-    f = ['srv', 'sys', 'tmp', 'usr', 'var', 'output', 'ws', 'run']
-    for dir_name in f:
-        if '.' not in dir_name:
-            print(f'\n\n{dir_name}\n')
-            print(os.listdir(f'../../{dir_name}'))
-
-    os.system('find rrc_20210705.sif')
-    # log_dir = wget.download('https://docs.google.com/uc?export=download&id=1V2grWmVCtEdl_2-B0d_VLPzNcJVhCrRZ',
-    #                         'best_model.zip')
-
+    print(os.listdir('/userhome'))
+    log_dir = '/userhome/best_model.zip'
     policy = SAC.load(log_dir)
 
     observation = env.reset()
