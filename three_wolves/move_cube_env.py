@@ -1,6 +1,7 @@
 import enum
 import typing
 import gym
+import robot_fingers
 from trifinger_simulation import TriFingerPlatform, trifingerpro_limits, visual_objects
 from trifinger_simulation.tasks import move_cube_on_trajectory as task
 from three_wolves.utils import *
