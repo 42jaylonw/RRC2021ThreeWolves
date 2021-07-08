@@ -5,7 +5,8 @@
 
 # Examples for Stage 1
 # ros2 run rrc_example_package real_move_up_and_down "$@"
-ros2 run three_wolves real_trajectory_example_with_gym "$@"
+# ros2 run three_wolves real_trajectory_example_with_gym "$@"
+ros2 run three_wolves real_trajectory
 
 # Example for Stage 2
 # ros2 run rrc_example_package dice_example_with_gym "$@"
