@@ -530,6 +530,39 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
         triangle_xyz_penalty = exp_mini(Delta([t0_t1, t0_t2, t1_t2]), wei=-1000)
         return triangle_xyz_penalty * 10
 
+class RealRobotCubeTrajectoryEnv(RLPositionHistoryEnv):
+    """Gym environment for moving cubes with real TriFingerPro."""
+
+    def reset(self):
+        # cannot reset multiple times
+        if self.platform is not None:
+            raise RuntimeError(
+                "Once started, this environment cannot be reset."
+            )
+
+        self.platform = robot_fingers.TriFingerPlatformWithObjectFrontend()
+
+        # if no goal is given, sample one randomly
+        if self.goal is None:
+            trajectory = task.sample_goal()
+        else:
+            trajectory = self.goal
+
+        self.info = {"time_index": -1, "trajectory": trajectory}
+        self.step_count = 0
+        self.inverse_kinematics = self.platform.simfinger.kinematics.inverse_kinematics
+        self.forward_kinematics = self.platform.simfinger.kinematics.forward_kinematics
+
+        obs_dict = self._create_observation(0)
+        self._last_dist_to_goal = compute_dist(obs_dict["desired_goal"], obs_dict['achieved_goal'])
+
+        # script to let arm reach box
+        while not self.IsNear(obs_dict):
+            _pre_action = self.tri_to_cube(obs_dict)
+            obs_dict, _ = self._apply_action(_pre_action)
+
+        return self.observer.reset(obs_dict)
+
 
 if __name__ == '__main__':
     env = RLPositionHistoryEnv(goal_trajectory=None,

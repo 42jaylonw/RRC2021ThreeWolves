@@ -1,33 +1,11 @@
-#!/usr/bin/python3
+#!/bin/sh
 
-import json
-import os.path
-import sys
-import time
+# run the script via `ros2 run` (for python scripts a simple symlink would also
+# work but using `ros2 run` works for C++ executables as well)
 
-from three_wolves.move_cube_env import RLPositionHistoryEnv
-from stable_baselines3 import SAC
+# Examples for Stage 1
+# ros2 run rrc_example_package real_move_up_and_down "$@"
+ros2 run three_wolves real_trajectory_example_with_gym "$@"
 
-def main():
-    # the goal is passed as JSON string
-    # goal_json = sys.argv[1]
-    # goal_trajectory = json.loads(goal_json)
-
-    env = RLPositionHistoryEnv(goal_trajectory=None,
-                               visualization=False)
-    print(os.listdir('/userhome'))
-    log_dir = '/userhome/best_model.zip'
-    policy = SAC.load(log_dir)
-
-    observation = env.reset()
-    t = 0
-    is_done = False
-    while not is_done:
-        action = policy.predict(observation)[0]
-        observation, reward, is_done, info = env.step(action)
-        t = info["time_index"]
-        print("reward:", reward)
-
-
-if __name__ == "__main__":
-    main()
+# Example for Stage 2
+# ros2 run rrc_example_package dice_example_with_gym "$@"
