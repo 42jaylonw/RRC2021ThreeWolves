@@ -15,8 +15,8 @@ def main():
                                visualization=False)
 
     print(os.listdir('../../userhome/three_wolves'))
-    log_dir = f"../../userhome/three_wolves/model_save/triangle_cube_tg/"
-    policy = SAC.load(log_dir + "best_model.zip")
+    log_dir = f"../../userhome/three_wolves/model_save/triangle_cube_tg/best_model.zip"
+    policy = SAC.load(log_dir)
 
     observation = env.reset()
     t = 0
