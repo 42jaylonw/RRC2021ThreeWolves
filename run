@@ -5,6 +5,7 @@ import os.path
 import sys
 from three_wolves.move_cube_env import RLPositionHistoryEnv
 from stable_baselines3 import SAC
+from subprocess import check_output
 
 def main():
     # the goal is passed as JSON string
@@ -17,7 +18,10 @@ def main():
     print(os.listdir())
     # print(os.listdir('../../userhome/three_wolves'))
     # log_dir = f"../../userhome/three_wolves/model_save/triangle_cube_tg/best_model.zip"
-    log_dir = "three_wolves/model_save/triangle_cube_tg/best_model.zip"
+    # log_dir = "three_wolves/model_save/triangle_cube_tg/best_model.zip"
+    cmd = '!git clone https://github.com/42jaylonw/trifinger_model.git ./'
+    check_output(cmd, shell=True).decode()
+    log_dir = "trifinger_model/triangle_cube_tg/best_model.zip"
     policy = SAC.load(log_dir)
 
     observation = env.reset()
