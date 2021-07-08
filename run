@@ -3,6 +3,8 @@
 import json
 import os.path
 import sys
+import time
+
 from three_wolves.move_cube_env import RLPositionHistoryEnv
 from stable_baselines3 import SAC
 # from subprocess import check_output
@@ -17,22 +19,16 @@ def get_model_from_git():
                                    stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         print(stdout, stderr)
-    # subprocess.run("git", "config", "--global", "--unset", "http.proxy")
-    # subprocess.run("git", "config", "--global", "user.name", "42jaylonw")
-    # subprocess.run("git", "config", "--global", "user.email", "42jaylonw@gmail.com")
-    # process = subprocess.Popen(['git', 'clone', 'https://github.com/42jaylonw/trifinger_model.git'],
-    #                            stdout=subprocess.PIPE,
-    #                            stderr=subprocess.PIPE)
-    # stdout, stderr = process.communicate()
-    # print(stdout, stderr)
-    # print(os.listdir())
-    run(["git", "config", "--global", "--unset-all", "http.proxy"])
-    run(["git", "config", "--global", "user.name", "42jaylonw"])
-    run(["git", "config", "--global", "user.email", "42jaylonw@gmail.com"])
-    run(['git', 'clone', 'git@github.com:42jaylonw/rrc_2021_three_wolves.git'])
-    run(['wget', 'https://github.com/42jaylonw/trifinger_model/blob/master/triangle_cube_tg/best_model.zip'])
+    # run(["git", "config", "--global", "--unset-all", "http.proxy"])
+    # run(["git", "config", "--global", "user.name", "42jaylonw"])
+    # run(["git", "config", "--global", "user.email", "42jaylonw@gmail.com"])
+    # run(['git', 'clone', 'git@github.com:42jaylonw/rrc_2021_three_wolves.git'])
+    # run(['wget', 'https://github.com/42jaylonw/trifinger_model/blob/master/triangle_cube_tg/best_model.zip'])
+    run(['wget', '--no-check-certificate',
+         "\'https://docs.google.com/uc?export=download&id=1V2grWmVCtEdl_2-B0d_VLPzNcJVhCrRZ\'",
+         '-O', 'best_model.zip'])
     print(os.listdir())
-    return "rrc_2021_three_wolves/three_wolves/model_save/triangle_cube_tg/best_model.zip"
+    return "./best_model.zip"
 
 
 def main():
