@@ -1,0 +1,25 @@
+[0.197s] Invoking command in '/home/jaylon42/rrc_2021_ws/src/three_wolves': CONDA_PROMPT_MODIFIER=(trifinger_simulation) PS1=Singularity> PYTHONPATH=/home/jaylon42/rrc_2021_ws/src/three_wolves/install/three_wolves/lib/python3.8/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base build/three_wolves build --build-base /home/jaylon42/rrc_2021_ws/src/three_wolves/build/three_wolves/build install --prefix /home/jaylon42/rrc_2021_ws/src/three_wolves/install/three_wolves --record /home/jaylon42/rrc_2021_ws/src/three_wolves/build/three_wolves/install.log --single-version-externally-managed
+[0.370s] running egg_info
+[0.371s] writing build/three_wolves/three_wolves.egg-info/PKG-INFO
+[0.371s] writing dependency_links to build/three_wolves/three_wolves.egg-info/dependency_links.txt
+[0.371s] writing entry points to build/three_wolves/three_wolves.egg-info/entry_points.txt
+[0.371s] writing requirements to build/three_wolves/three_wolves.egg-info/requires.txt
+[0.371s] writing top-level names to build/three_wolves/three_wolves.egg-info/top_level.txt
+[0.398s] reading manifest file 'build/three_wolves/three_wolves.egg-info/SOURCES.txt'
+[0.399s] writing manifest file 'build/three_wolves/three_wolves.egg-info/SOURCES.txt'
+[0.399s] running build
+[0.399s] running build_py
+[0.399s] copying three_wolves/scripts/real_trajectory.py -> /home/jaylon42/rrc_2021_ws/src/three_wolves/build/three_wolves/build/lib/three_wolves/scripts
+[0.401s] running install
+[0.402s] running install_lib
+[0.403s] copying /home/jaylon42/rrc_2021_ws/src/three_wolves/build/three_wolves/build/lib/three_wolves/scripts/real_trajectory.py -> /home/jaylon42/rrc_2021_ws/src/three_wolves/install/three_wolves/lib/python3.8/site-packages/three_wolves/scripts
+[0.404s] byte-compiling /home/jaylon42/rrc_2021_ws/src/three_wolves/install/three_wolves/lib/python3.8/site-packages/three_wolves/scripts/real_trajectory.py to real_trajectory.cpython-38.pyc
+[0.406s] running install_data
+[0.406s] running install_egg_info
+[0.407s] removing '/home/jaylon42/rrc_2021_ws/src/three_wolves/install/three_wolves/lib/python3.8/site-packages/three_wolves-2.0.0-py3.8.egg-info' (and everything under it)
+[0.407s] Copying build/three_wolves/three_wolves.egg-info to /home/jaylon42/rrc_2021_ws/src/three_wolves/install/three_wolves/lib/python3.8/site-packages/three_wolves-2.0.0-py3.8.egg-info
+[0.408s] running install_scripts
+[0.421s] Installing real_trajectory script to /home/jaylon42/rrc_2021_ws/src/three_wolves/install/three_wolves/lib/three_wolves
+[0.421s] Installing sim_trajectory script to /home/jaylon42/rrc_2021_ws/src/three_wolves/install/three_wolves/lib/three_wolves
+[0.422s] writing list of installed files to '/home/jaylon42/rrc_2021_ws/src/three_wolves/build/three_wolves/install.log'
+[0.436s] Invoked command in '/home/jaylon42/rrc_2021_ws/src/three_wolves' returned '0': CONDA_PROMPT_MODIFIER=(trifinger_simulation) PS1=Singularity> PYTHONPATH=/home/jaylon42/rrc_2021_ws/src/three_wolves/install/three_wolves/lib/python3.8/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base build/three_wolves build --build-base /home/jaylon42/rrc_2021_ws/src/three_wolves/build/three_wolves/build install --prefix /home/jaylon42/rrc_2021_ws/src/three_wolves/install/three_wolves --record /home/jaylon42/rrc_2021_ws/src/three_wolves/build/three_wolves/install.log --single-version-externally-managed

@@ -1,0 +1,4 @@
+[console_scripts]
+real_trajectory = three_wolves.scripts.real_trajectory:main
+sim_trajectory = three_wolves.scripts.sim_trajectory:main
+

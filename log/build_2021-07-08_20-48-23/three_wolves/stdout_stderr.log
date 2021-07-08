@@ -1,0 +1,23 @@
+running egg_info
+writing build/three_wolves/three_wolves.egg-info/PKG-INFO
+writing dependency_links to build/three_wolves/three_wolves.egg-info/dependency_links.txt
+writing entry points to build/three_wolves/three_wolves.egg-info/entry_points.txt
+writing requirements to build/three_wolves/three_wolves.egg-info/requires.txt
+writing top-level names to build/three_wolves/three_wolves.egg-info/top_level.txt
+reading manifest file 'build/three_wolves/three_wolves.egg-info/SOURCES.txt'
+writing manifest file 'build/three_wolves/three_wolves.egg-info/SOURCES.txt'
+running build
+running build_py
+copying three_wolves/scripts/real_trajectory.py -> /home/jaylon42/rrc_2021_ws/src/three_wolves/build/three_wolves/build/lib/three_wolves/scripts
+running install
+running install_lib
+copying /home/jaylon42/rrc_2021_ws/src/three_wolves/build/three_wolves/build/lib/three_wolves/scripts/real_trajectory.py -> /home/jaylon42/rrc_2021_ws/src/three_wolves/install/three_wolves/lib/python3.8/site-packages/three_wolves/scripts
+byte-compiling /home/jaylon42/rrc_2021_ws/src/three_wolves/install/three_wolves/lib/python3.8/site-packages/three_wolves/scripts/real_trajectory.py to real_trajectory.cpython-38.pyc
+running install_data
+running install_egg_info
+removing '/home/jaylon42/rrc_2021_ws/src/three_wolves/install/three_wolves/lib/python3.8/site-packages/three_wolves-2.0.0-py3.8.egg-info' (and everything under it)
+Copying build/three_wolves/three_wolves.egg-info to /home/jaylon42/rrc_2021_ws/src/three_wolves/install/three_wolves/lib/python3.8/site-packages/three_wolves-2.0.0-py3.8.egg-info
+running install_scripts
+Installing real_trajectory script to /home/jaylon42/rrc_2021_ws/src/three_wolves/install/three_wolves/lib/three_wolves
+Installing sim_trajectory script to /home/jaylon42/rrc_2021_ws/src/three_wolves/install/three_wolves/lib/three_wolves
+writing list of installed files to '/home/jaylon42/rrc_2021_ws/src/three_wolves/build/three_wolves/install.log'

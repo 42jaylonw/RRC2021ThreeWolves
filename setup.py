@@ -30,10 +30,8 @@ setuptools.setup(
     # scripts here.
     entry_points={
         "console_scripts": [
-            "real_trajectory_example_with_gym = three_wolves.scripts.real_trajectory:main",
-            "sim_trajectory_example_with_gym = three_wolves.scripts.sim_trajectory:main",
-
-            "sim_cube_trajectory_test = three_wolves.scripts.sim_cube_trajectory_test:main",
+            "real_trajectory = three_wolves.scripts.real_trajectory:main",
+            "sim_trajectory = three_wolves.scripts.sim_trajectory:main",
         ],
     },
 )
