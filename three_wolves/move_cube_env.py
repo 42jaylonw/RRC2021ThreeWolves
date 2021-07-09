@@ -317,7 +317,7 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
         cube_pos = object_observation.position
         cube_orn = object_observation.orientation[:3]
         # compute finger positions
-        finger_pos = self.forward_kinematics(robot_observation.position)
+        finger_pos = [self.forward_kinematics(robot_observation.position[i*3:i*3+3]) for i in range(3)]
         observation = {
             "joint_position": robot_observation.position,   # joint position
             "joint_velocity": robot_observation.velocity,   # joint velocity
