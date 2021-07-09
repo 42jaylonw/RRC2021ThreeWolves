@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import json
+import os
 import sys
 
 from three_wolves.move_cube_env import RLPositionHistoryEnv
@@ -17,6 +18,7 @@ def main():
 
     # load
     log_dir = '/userhome/best_model.zip'
+    print(os.listdir('/userhome'))
     policy = SAC.load(log_dir)
 
     observation = env.reset()
