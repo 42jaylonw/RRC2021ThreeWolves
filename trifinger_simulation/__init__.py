@@ -18,5 +18,6 @@ from .trifinger_platform import (  # noqa
 #     return p.parent / "data"
 
 def get_data_dir() -> pathlib.Path:
-    return "userhome/data"
+    p = pathlib.Path('userhome')
+    return p / "data"
 
