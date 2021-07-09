@@ -8,6 +8,7 @@ from three_wolves.utils import *
 from trifinger_simulation import pinocchio_utils
 import numpy as np
 
+
 class ActionType(enum.Enum):
     """Different action types that can be used to control the robot."""
 
@@ -26,14 +27,15 @@ class ActionType(enum.Enum):
     #: applying them to the robot.
     TORQUE_AND_POSITION = enum.auto()
 
+
 class BaseCubeTrajectoryEnv(gym.GoalEnv):
     """Gym environment for moving cubes with TriFingerPro."""
 
     def __init__(
-        self,
-        goal_trajectory: typing.Optional[task.Trajectory] = None,
-        action_type: ActionType = ActionType.POSITION,
-        step_size: int = 1,
+            self,
+            goal_trajectory: typing.Optional[task.Trajectory] = None,
+            action_type: ActionType = ActionType.POSITION,
+            step_size: int = 1,
     ):
         """Initialize.
 
@@ -132,10 +134,10 @@ class BaseCubeTrajectoryEnv(gym.GoalEnv):
         )
 
     def compute_reward(
-        self,
-        achieved_goal: task.Position,
-        desired_goal: task.Position,
-        info: dict,
+            self,
+            achieved_goal: task.Position,
+            desired_goal: task.Position,
+            info: dict,
     ) -> float:
         """Compute the reward for the given achieved and desired goal.
 
@@ -254,6 +256,7 @@ class BaseCubeTrajectoryEnv(gym.GoalEnv):
 
         return robot_action
 
+
 class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
     def __init__(self, goal_trajectory, visualization, history_num=3):
         super(RLPositionHistoryEnv, self).__init__(
@@ -277,15 +280,15 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
         spaces = TriFingerPlatform.spaces
         self.observation_space = gym.spaces.Box(
             low=np.hstack([
-                _duplicate(spaces.robot_position.gym.low),   # joint position
-                _duplicate(spaces.robot_velocity.gym.low),   # joint velocity
-                _duplicate(spaces.robot_torque.gym.low),     # joint torque
-                _duplicate([0] * 3),                         # tip force
+                _duplicate(spaces.robot_position.gym.low),  # joint position
+                _duplicate(spaces.robot_velocity.gym.low),  # joint velocity
+                _duplicate(spaces.robot_torque.gym.low),  # joint torque
+                _duplicate([0] * 3),  # tip force
 
-                _duplicate(spaces.object_position.gym.low),    # cube position
-                _duplicate([-np.pi] * 3),                      # cube orientation
-                _duplicate(spaces.object_position.gym.low),    # goal position
-                _duplicate([-0.3] * 3),                        # cube to goal distance
+                _duplicate(spaces.object_position.gym.low),  # cube position
+                _duplicate([-np.pi] * 3),  # cube orientation
+                _duplicate(spaces.object_position.gym.low),  # goal position
+                _duplicate([-0.3] * 3),  # cube to goal distance
 
                 _duplicate(spaces.object_position.gym.low),  # tri-finger position 0
                 _duplicate(spaces.object_position.gym.low),  # tri-finger position 1
@@ -319,17 +322,17 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
         # compute finger positions
         finger_pos = self.forward_kinematics(robot_observation.position)
         observation = {
-            "joint_position": robot_observation.position,   # joint position
-            "joint_velocity": robot_observation.velocity,   # joint velocity
-            "joint_torque": robot_observation.torque,       # joint torque
-            "tip_force": robot_observation.tip_force,       # tip force
-            "achieved_goal": cube_pos,       # cube position
+            "joint_position": robot_observation.position,  # joint position
+            "joint_velocity": robot_observation.velocity,  # joint velocity
+            "joint_torque": robot_observation.torque,  # joint torque
+            "tip_force": robot_observation.tip_force,  # tip force
+            "achieved_goal": cube_pos,  # cube position
             "object_orientation": cube_orn,  # cube orientation
-            "desired_goal": active_goal,     # goal position
+            "desired_goal": active_goal,  # goal position
             "cube_goal_distance": active_goal - cube_pos,  # cube to goal distance
             "finger_0_position": finger_pos[0],  # tri-finger position 0
             "finger_1_position": finger_pos[1],  # tri-finger position 1
-            "finger_2_position": finger_pos[2]   # tri-finger position 2
+            "finger_2_position": finger_pos[2]  # tri-finger position 2
         }
         return observation
 
@@ -372,17 +375,15 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
 
         self.info = {"time_index": -1, "trajectory": trajectory}
         self.step_count = 0
-        self.inverse_kinematics = self.platform.simfinger.kinematics.inverse_kinematics
-        self.forward_kinematics = self.platform.simfinger.kinematics.forward_kinematics
-        # kinematics = pinocchio_utils.Kinematics(
-        #     '/userhome/robot_properties_fingers/urdf/pro/fingerpro.urdf', [
-        #         "finger_tip_link_0",
-        #         "finger_tip_link_120",
-        #         "finger_tip_link_240",
-        #     ]
-        # )
-        # self.inverse_kinematics = kinematics.inverse_kinematics
-        # self.forward_kinematics = kinematics.forward_kinematics
+        # self.inverse_kinematics = self.platform.simfinger.kinematics.inverse_kinematics
+        # self.forward_kinematics = self.platform.simfinger.kinematics.forward_kinematics
+        # _trifinger_urdf = '/userhome/robot_properties_fingers/urdf/fingerpro_with_stage.urdf'
+        trifinger_urdf = '/userhome/robot_properties_fingers/urdf/pro/fingerpro_with_stage.urdf'
+        kinematics = pinocchio_utils.Kinematics(trifinger_urdf, ["finger_tip_link_0",
+                                                                 "finger_tip_link_120",
+                                                                 "finger_tip_link_240"])
+        self.inverse_kinematics = kinematics.inverse_kinematics
+        self.forward_kinematics = kinematics.forward_kinematics
 
         obs_dict = self._create_observation(0)
         self._last_dist_to_goal = compute_dist(obs_dict["desired_goal"], obs_dict['achieved_goal'])
@@ -397,7 +398,7 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
     def get_reward(self, obs_dict):
         # ObjectStability = -10 if self.IsWarp(obs_dict) else 0
         NotNear = -10 if not self.IsNear(obs_dict) else 0.1
-        ReachReward = self.ReachReward(obs_dict)*2
+        ReachReward = self.ReachReward(obs_dict) * 2
         TipForceBalance = self.GraspPenalty(obs_dict)
         SlipperyPenalty = self.SlipperyPenalty()
         TipTriangle = self.TipTriangle(obs_dict)
@@ -461,7 +462,7 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
         arm_joi_pos = obs_dict['joint_position']
         cube_pos = obs_dict['achieved_goal']
         tar_arm_pos_0 = [
-            np.add(cube_pos, [0, 0.03,  0]),  # arm_0 x+y+
+            np.add(cube_pos, [0, 0.03, 0]),  # arm_0 x+y+
             np.add(cube_pos, [0, -0.03, 0]),  # arm_1 x+y-
             np.add(cube_pos, [-0.03, 0, 0])  # arm_2 x-y+
         ]
@@ -481,7 +482,7 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
         target_reward = fVCap(_tar_vel, dist_to_goal - self._last_dist_to_goal)
 
         self._last_dist_to_goal = dist_to_goal
-        return target_reward * 2.5e3    # -1 ~ 1
+        return target_reward * 2.5e3  # -1 ~ 1
 
     @staticmethod
     def IsWarp(obs_dict):
@@ -526,7 +527,7 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
         delta_tri_2 = Delta([compute_dist(p0, p1) for p0, p1 in
                              zip(self.observer.search('finger_2_position'), cube_pos_his)])
         sp = - np.sum([delta_tri_0, delta_tri_1, delta_tri_2])
-        return sp*100
+        return sp * 100
 
     @staticmethod
     def TipTriangle(obs_dict):
@@ -540,6 +541,7 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
         t1_t2 = compute_dist(tip_1, tip_2)
         triangle_xyz_penalty = exp_mini(Delta([t0_t1, t0_t2, t1_t2]), wei=-1000)
         return triangle_xyz_penalty * 10
+
 
 class RealRobotCubeTrajectoryEnv(RLPositionHistoryEnv):
     """Gym environment for moving cubes with real TriFingerPro."""
