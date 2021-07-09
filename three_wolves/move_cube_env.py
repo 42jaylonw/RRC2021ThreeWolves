@@ -317,7 +317,7 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
         cube_pos = object_observation.position
         cube_orn = object_observation.orientation[:3]
         # compute finger positions
-        finger_pos = [self.forward_kinematics(robot_observation.position[i*3:i*3+3]) for i in range(3)]
+        finger_pos = self.forward_kinematics(robot_observation.position)
         observation = {
             "joint_position": robot_observation.position,   # joint position
             "joint_velocity": robot_observation.velocity,   # joint velocity
@@ -372,15 +372,17 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
 
         self.info = {"time_index": -1, "trajectory": trajectory}
         self.step_count = 0
-        self.kinematics = pinocchio_utils.Kinematics(
-            '/userhome/robot_properties_fingers/urdf/pro/fingerpro.urdf', [
-                "finger_tip_link_0",
-                "finger_tip_link_120",
-                "finger_tip_link_240",
-            ]
-        )
-        self.inverse_kinematics = self.kinematics.inverse_kinematics
-        self.forward_kinematics = self.kinematics.forward_kinematics
+        self.inverse_kinematics = self.platform.simfinger.kinematics.inverse_kinematics
+        self.forward_kinematics = self.platform.simfinger.kinematics.forward_kinematics
+        # kinematics = pinocchio_utils.Kinematics(
+        #     '/userhome/robot_properties_fingers/urdf/pro/fingerpro.urdf', [
+        #         "finger_tip_link_0",
+        #         "finger_tip_link_120",
+        #         "finger_tip_link_240",
+        #     ]
+        # )
+        # self.inverse_kinematics = kinematics.inverse_kinematics
+        # self.forward_kinematics = kinematics.forward_kinematics
 
         obs_dict = self._create_observation(0)
         self._last_dist_to_goal = compute_dist(obs_dict["desired_goal"], obs_dict['achieved_goal'])
