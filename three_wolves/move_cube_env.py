@@ -1,11 +1,14 @@
 import enum
+import os
 import typing
 import gym
 import robot_fingers
 from trifinger_simulation import TriFingerPlatform, trifingerpro_limits, visual_objects
 from trifinger_simulation.tasks import move_cube_on_trajectory as task
-from three_wolves.utils import *
 from trifinger_simulation import pinocchio_utils
+from trifinger_simulation import finger_types_data
+from three_wolves.utils import *
+
 import numpy as np
 
 
@@ -256,6 +259,26 @@ class BaseCubeTrajectoryEnv(gym.GoalEnv):
 
         return robot_action
 
+    def __set_urdf_path(self):
+        """
+        Sets the paths for the URDFs to use depending upon the finger type
+        """
+        try:
+            from ament_index_python.packages import get_package_share_directory
+
+            self.robot_properties_path = get_package_share_directory(
+                "robot_properties_fingers"
+            )
+        except Exception:
+            self.robot_properties_path = os.path.join(
+                os.path.dirname(__file__), "robot_properties_fingers"
+            )
+
+        urdf_file = finger_types_data.get_finger_urdf(self.finger_type)
+        self.finger_urdf_path = os.path.join(
+            self.robot_properties_path, "urdf", urdf_file
+        )
+
 
 class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
     def __init__(self, goal_trajectory, visualization, history_num=3):
@@ -378,10 +401,10 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
         # self.inverse_kinematics = self.platform.simfinger.kinematics.inverse_kinematics
         # self.forward_kinematics = self.platform.simfinger.kinematics.forward_kinematics
         # _trifinger_urdf = '/userhome/robot_properties_fingers/urdf/trifingerpro_with_stage.urdf'
-        trifinger_urdf = '/userhome/robot_properties_fingers/urdf/pro/trifingerpro_with_stage.urdf'
-        kinematics = pinocchio_utils.Kinematics(trifinger_urdf, ["finger_tip_link_0",
-                                                                 "finger_tip_link_120",
-                                                                 "finger_tip_link_240"])
+        # trifinger_urdf = '/userhome/robot_properties_fingers/urdf/pro/trifingerpro_with_stage.urdf'
+        kinematics = pinocchio_utils.Kinematics(self.finger_urdf_path, ["finger_tip_link_0",
+                                                                        "finger_tip_link_120",
+                                                                        "finger_tip_link_240"])
         self.inverse_kinematics = kinematics.inverse_kinematics
         self.forward_kinematics = kinematics.forward_kinematics
 
