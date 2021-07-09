@@ -11,7 +11,7 @@ def main():
     # the goal is passed as JSON string
     goal_json = sys.argv[1]
     goal_trajectory = json.loads(goal_json)
-
+    print(goal_trajectory)
     env = RLPositionHistoryEnv(
         goal_trajectory=goal_trajectory,
         visualization=False)
