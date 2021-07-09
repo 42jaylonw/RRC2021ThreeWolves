@@ -259,7 +259,7 @@ class BaseCubeTrajectoryEnv(gym.GoalEnv):
 
         return robot_action
 
-    def __set_urdf_path(self):
+    def _set_urdf_path(self):
         """
         Sets the paths for the URDFs to use depending upon the finger type
         """
@@ -398,16 +398,16 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
 
         self.info = {"time_index": -1, "trajectory": trajectory}
         self.step_count = 0
-        self.inverse_kinematics = self.platform.simfinger.kinematics.inverse_kinematics
-        self.forward_kinematics = self.platform.simfinger.kinematics.forward_kinematics
+        # self.inverse_kinematics = self.platform.simfinger.kinematics.inverse_kinematics
+        # self.forward_kinematics = self.platform.simfinger.kinematics.forward_kinematics
         # _trifinger_urdf = '/userhome/robot_properties_fingers/urdf/trifingerpro_with_stage.urdf'
         # trifinger_urdf = '/userhome/robot_properties_fingers/urdf/pro/trifingerpro_with_stage.urdf'
-
-        # kinematics = pinocchio_utils.Kinematics(self.finger_urdf_path, ["finger_tip_link_0",
-        #                                                                 "finger_tip_link_120",
-        #                                                                 "finger_tip_link_240"])
-        # self.inverse_kinematics = kinematics.inverse_kinematics
-        # self.forward_kinematics = kinematics.forward_kinematics
+        self._set_urdf_path()
+        kinematics = pinocchio_utils.Kinematics(self.finger_urdf_path, ["finger_tip_link_0",
+                                                                        "finger_tip_link_120",
+                                                                        "finger_tip_link_240"])
+        self.inverse_kinematics = kinematics.inverse_kinematics
+        self.forward_kinematics = kinematics.forward_kinematics
 
         obs_dict = self._create_observation(0)
         self._last_dist_to_goal = compute_dist(obs_dict["desired_goal"], obs_dict['achieved_goal'])
@@ -587,10 +587,10 @@ class RealRobotCubeTrajectoryEnv(RLPositionHistoryEnv):
 
         self.info = {"time_index": -1, "trajectory": trajectory}
         self.step_count = 0
-        trifinger_urdf = '/userhome/robot_properties_fingers/urdf/pro/trifingerpro_with_stage.urdf'
-        kinematics = pinocchio_utils.Kinematics(trifinger_urdf, ["finger_tip_link_0",
-                                                                 "finger_tip_link_120",
-                                                                 "finger_tip_link_240"])
+        self._set_urdf_path()
+        kinematics = pinocchio_utils.Kinematics(self.finger_urdf_path, ["finger_tip_link_0",
+                                                                        "finger_tip_link_120",
+                                                                        "finger_tip_link_240"])
         self.inverse_kinematics = kinematics.inverse_kinematics
         self.forward_kinematics = kinematics.forward_kinematics
 
