@@ -17,7 +17,7 @@ def main():
         visualization=False)
 
     # load
-    log_dir = '/userhome/best_model.zip'
+    log_dir = '/userhome/position_model.zip'
     print(os.listdir('/userhome'))
     policy = SAC.load(log_dir)
 
