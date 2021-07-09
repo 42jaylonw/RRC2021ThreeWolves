@@ -273,8 +273,8 @@ class BaseCubeTrajectoryEnv(gym.GoalEnv):
             self.robot_properties_path = os.path.join(
                 os.path.dirname(__file__), "robot_properties_fingers"
             )
-
-        urdf_file = finger_types_data.get_finger_urdf(self.finger_type)
+        print(self.robot_properties_path)
+        urdf_file = finger_types_data.get_finger_urdf("trifingerpro")
         self.finger_urdf_path = os.path.join(
             self.robot_properties_path, "urdf", urdf_file
         )
