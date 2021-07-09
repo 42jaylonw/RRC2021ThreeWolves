@@ -8,12 +8,12 @@ from stable_baselines3 import SAC
 
 def main():
     # the goal is passed as JSON string
-    # goal_json = sys.argv[1]
-    # print(goal_json)
-    # goal_trajectory = json.loads(goal_json)
+    goal_json = sys.argv[1]
+    print(goal_json)
+    goal_trajectory = json.loads(goal_json)
 
     env = RealRobotCubeTrajectoryEnv(
-        goal_trajectory=None,
+        goal_trajectory=goal_trajectory,
         visualization=False)
 
     # load
