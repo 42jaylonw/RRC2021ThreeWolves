@@ -3,7 +3,7 @@
 import json
 import sys
 
-from three_wolves.move_cube_env import RealRobotCubeTrajectoryEnv
+from three_wolves.move_cube_env import RLPositionHistoryEnv
 from stable_baselines3 import SAC
 
 def main():
@@ -11,7 +11,7 @@ def main():
     # goal_json = sys.argv[1]
     # goal_trajectory = json.loads(goal_json)
 
-    env = RealRobotCubeTrajectoryEnv(
+    env = RLPositionHistoryEnv(
         goal_trajectory=None,
         visualization=False)
 

@@ -5,6 +5,7 @@ import robot_fingers
 from trifinger_simulation import TriFingerPlatform, trifingerpro_limits, visual_objects
 from trifinger_simulation.tasks import move_cube_on_trajectory as task
 from three_wolves.utils import *
+from trifinger_simulation import pinocchio_utils
 import numpy as np
 
 class ActionType(enum.Enum):
@@ -371,8 +372,15 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
 
         self.info = {"time_index": -1, "trajectory": trajectory}
         self.step_count = 0
-        self.inverse_kinematics = self.platform.simfinger.kinematics.inverse_kinematics
-        self.forward_kinematics = self.platform.simfinger.kinematics.forward_kinematics
+        self.kinematics = pinocchio_utils.Kinematics(
+            '/userhome/robot_properties_fingers/urdf/pro/fingerpro.urdf', [
+                "finger_tip_link_0",
+                "finger_tip_link_120",
+                "finger_tip_link_240",
+            ]
+        )
+        self.inverse_kinematics = self.kinematics.inverse_kinematics
+        self.forward_kinematics = self.kinematics.forward_kinematics
 
         obs_dict = self._create_observation(0)
         self._last_dist_to_goal = compute_dist(obs_dict["desired_goal"], obs_dict['achieved_goal'])
