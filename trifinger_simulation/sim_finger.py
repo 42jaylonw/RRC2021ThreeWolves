@@ -98,6 +98,7 @@ class SimFinger:
         self.kinematics = pinocchio_utils.Kinematics(
             self.finger_urdf_path, self.tip_link_names
         )
+        print(self.finger_urdf_path, self.tip_link_names)
 
     def Action(self, torque=None, position=None):
         """
