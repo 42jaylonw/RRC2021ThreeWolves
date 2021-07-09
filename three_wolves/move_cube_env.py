@@ -377,8 +377,8 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
         self.step_count = 0
         # self.inverse_kinematics = self.platform.simfinger.kinematics.inverse_kinematics
         # self.forward_kinematics = self.platform.simfinger.kinematics.forward_kinematics
-        # _trifinger_urdf = '/userhome/robot_properties_fingers/urdf/fingerpro_with_stage.urdf'
-        trifinger_urdf = '/userhome/robot_properties_fingers/urdf/pro/fingerpro.urdf'
+        # _trifinger_urdf = '/userhome/robot_properties_fingers/urdf/trifingerpro_with_stage.urdf'
+        trifinger_urdf = '/userhome/robot_properties_fingers/urdf/pro/trifingerpro_with_stage.urdf'
         kinematics = pinocchio_utils.Kinematics(trifinger_urdf, ["finger_tip_link_0",
                                                                  "finger_tip_link_120",
                                                                  "finger_tip_link_240"])
