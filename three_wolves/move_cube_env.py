@@ -403,9 +403,10 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
         # _trifinger_urdf = '/userhome/robot_properties_fingers/urdf/trifingerpro_with_stage.urdf'
         # trifinger_urdf = '/userhome/robot_properties_fingers/urdf/pro/trifingerpro_with_stage.urdf'
         self._set_urdf_path()
-        kinematics = pinocchio_utils.Kinematics(self.finger_urdf_path, ["finger_tip_link_0",
-                                                                        "finger_tip_link_120",
-                                                                        "finger_tip_link_240"])
+        kinematics = pinocchio_utils.Kinematics(
+            self.finger_urdf_path, ["finger_tip_link_0",
+                                    "finger_tip_link_120",
+                                    "finger_tip_link_240"])
         self.inverse_kinematics = kinematics.inverse_kinematics
         self.forward_kinematics = kinematics.forward_kinematics
 
@@ -588,9 +589,10 @@ class RealRobotCubeTrajectoryEnv(RLPositionHistoryEnv):
         self.info = {"time_index": -1, "trajectory": trajectory}
         self.step_count = 0
         self._set_urdf_path()
-        kinematics = pinocchio_utils.Kinematics(self.finger_urdf_path, ["finger_tip_link_0",
-                                                                        "finger_tip_link_120",
-                                                                        "finger_tip_link_240"])
+        kinematics = pinocchio_utils.Kinematics(
+            self.finger_urdf_path, ["finger_tip_link_0",
+                                    "finger_tip_link_120",
+                                    "finger_tip_link_240"])
         self.inverse_kinematics = kinematics.inverse_kinematics
         self.forward_kinematics = kinematics.forward_kinematics
 
@@ -603,6 +605,27 @@ class RealRobotCubeTrajectoryEnv(RLPositionHistoryEnv):
             obs_dict, _ = self._apply_action(_pre_action)
 
         return self.observer.reset(obs_dict)
+
+    def _apply_action(self, action):
+        for _ in range(self.step_size):
+            self.step_count += 1
+            if self.step_count > task.EPISODE_LENGTH:
+                raise RuntimeError("Exceeded number of steps for one episode.")
+
+            # send action to robot
+            robot_action = self._gym_action_to_robot_action(action)
+            t = self.platform.append_desired_action(robot_action)
+
+            self.info["time_index"] = t
+
+        obs_dict = self._create_observation(self.info["time_index"])
+
+        eval_score = self.compute_reward(
+            obs_dict["achieved_goal"],
+            obs_dict["desired_goal"],
+            self.info,
+        )
+        return obs_dict, eval_score
 
 
 if __name__ == '__main__':
