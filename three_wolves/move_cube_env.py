@@ -435,7 +435,7 @@ class RLPositionHistoryEnv(BaseCubeTrajectoryEnv):
         for _ in range(self.step_size):
             self.step_count += 1
             if self.step_count > task.EPISODE_LENGTH:
-                raise RuntimeError("Exceeded number of steps for one episode.")
+                break
 
             # send action to robot
             robot_action = self._gym_action_to_robot_action(action)
@@ -610,7 +610,7 @@ class RealRobotCubeTrajectoryEnv(RLPositionHistoryEnv):
         for _ in range(self.step_size):
             self.step_count += 1
             if self.step_count > task.EPISODE_LENGTH:
-                raise RuntimeError("Exceeded number of steps for one episode.")
+                break
 
             # send action to robot
             robot_action = self._gym_action_to_robot_action(action)
