@@ -2,10 +2,15 @@
 "joint_velocity": robot_observation.velocity,   # joint velocity
 "joint_torque": robot_observation.torque,       # joint torque
 "tip_force": robot_observation.tip_force,       # tip force
-"achieved_goal": cube_pos,       # cube position
-"object_orientation": cube_orn,  # cube orientation
-"desired_goal": active_goal,     # goal position
-"cube_goal_distance": active_goal - cube_pos,  # cube to goal distance
-"finger_0_position": finger_pos[0],  # tri-finger position 0
-"finger_1_position": finger_pos[1],  # tri-finger position 1
-"finger_2_position": finger_pos[2]   # tri-finger position 2
+
+"object_position": cube_pos,       # cube position
+# "object_pos_rate":
+"object_rpy": cube_orn,  # cube orientation
+# "object_rpy_rate":
+
+"goal_position": active_goal,     # goal position
+"object_goal_distance": active_goal - cube_pos,  # cube to goal distance
+
+"tip_0_position": finger_pos[0],  # tri-finger position 0
+"tip_1_position": finger_pos[1],  # tri-finger position 1
+"tip_2_position": finger_pos[2]   # tri-finger position 2

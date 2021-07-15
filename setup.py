@@ -5,7 +5,7 @@ PACKAGE_NAME = "three_wolves"
 
 setuptools.setup(
     name=PACKAGE_NAME,
-    version="2.0.0",
+    version="0.0.1",
     # Packages to export
     packages=setuptools.find_packages(),
     data_files=[
@@ -30,8 +30,7 @@ setuptools.setup(
     # scripts here.
     entry_points={
         "console_scripts": [
-            "real_trajectory = three_wolves.scripts.real_trajectory:main",
-            "sim_trajectory = three_wolves.scripts.sim_trajectory:main",
+            "sim_cube_trajectory = three_wolves.scripts.sim_cube_trajectory:main",
         ],
     },
 )

@@ -397,7 +397,6 @@ class SimFinger:
             )
 
         applied_action.torque = self.__safety_check_torques(torque_command)
-
         self.__set_pybullet_motor_torques(applied_action.torque)
 
         # store this here for use in _get_latest_observation()

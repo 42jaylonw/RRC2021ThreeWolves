@@ -20,6 +20,12 @@ class Kinematics:
             finger_urdf_path:  Path to the URDF file describing the robot.
             tip_link_names:  Names of the finger tip frames, one per finger.
         """
+        self.urdf_path = '/opt/blmc_ei/src/robot_properties_fingers/urdf/pro/trifingerpro.urdf'
+        self.tip_link_names = [
+            "finger_tip_link_0",
+            "finger_tip_link_120",
+            "finger_tip_link_240",
+        ]
         self.robot_model = pinocchio.buildModelFromUrdf(finger_urdf_path)
         self.data = self.robot_model.createData()
         self.tip_link_ids = [

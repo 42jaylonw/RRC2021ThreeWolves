@@ -23,7 +23,7 @@ evaluate the actual performance of the policy.
 import argparse
 import json
 
-from three_wolves.move_cube_env import RLPositionHistoryEnv
+from three_wolves.envs.position_cube_env import RLPositionHistoryEnv
 from stable_baselines3 import SAC
 
 def main():
