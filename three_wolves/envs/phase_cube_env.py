@@ -298,37 +298,37 @@ class RealPhaseControlEnv(PhaseControlEnv):
     def __init__(self, goal_trajectory, visualization, args, action_type=ActionType.POSITION):
         super().__init__(goal_trajectory, visualization, args, action_type)
 
-    def _apply_action(self, action):
-        if self.deep_wbc.get_control_mode() == Control_Phase.POSITION:
-            init_joint_pos = self.observer.dt['joint_position']
-            tar_joint_pos = action['position']
-            tg = trajectory.get_interpolation_planner(init_pos=init_joint_pos,
-                                                      tar_pos=tar_joint_pos,
-                                                      start_time=0,
-                                                      reach_time=self.step_size)
-            for i in range(self.step_size):
-                if self.step_count >= task.EPISODE_LENGTH:
-                    break
-                _action = tg(i + 1)
-                t = self._internal_step(_action)
-        elif self.deep_wbc.get_control_mode() == Control_Phase.TORQUE:
-            for _ in range(self.step_size):
-                if self.step_count >= task.EPISODE_LENGTH:
-                    break
-                t = self._internal_step(action)
-        # Use observations of step t + 1 to follow what would be expected
-        # in a typical gym environment.  Note that on the real robot, this
-        # will not be possible
-        self.info["time_index"] = t  # + 1
-
-        obs_dict = self._create_observation(self.info["time_index"])
-
-        eval_score = self.compute_reward(
-            obs_dict["object_position"],
-            obs_dict["goal_position"],
-            self.info,
-        )
-        return obs_dict, eval_score
+    # def _apply_action(self, action):
+    #     if self.deep_wbc.get_control_mode() == Control_Phase.POSITION:
+    #         init_joint_pos = self.observer.dt['joint_position']
+    #         tar_joint_pos = action['position']
+    #         tg = trajectory.get_interpolation_planner(init_pos=init_joint_pos,
+    #                                                   tar_pos=tar_joint_pos,
+    #                                                   start_time=0,
+    #                                                   reach_time=self.step_size)
+    #         for i in range(self.step_size):
+    #             if self.step_count >= task.EPISODE_LENGTH:
+    #                 break
+    #             _action = tg(i + 1)
+    #             t = self._internal_step(_action)
+    #     elif self.deep_wbc.get_control_mode() == Control_Phase.TORQUE:
+    #         for _ in range(self.step_size):
+    #             if self.step_count >= task.EPISODE_LENGTH:
+    #                 break
+    #             t = self._internal_step(action)
+    #     # Use observations of step t + 1 to follow what would be expected
+    #     # in a typical gym environment.  Note that on the real robot, this
+    #     # will not be possible
+    #     self.info["time_index"] = t  # + 1
+    #
+    #     obs_dict = self._create_observation(self.info["time_index"])
+    #
+    #     eval_score = self.compute_reward(
+    #         obs_dict["object_position"],
+    #         obs_dict["goal_position"],
+    #         self.info,
+    #     )
+    #     return obs_dict, eval_score
 
     def step(self, policy_action):
         if self.platform is None:
