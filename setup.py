@@ -31,6 +31,7 @@ setuptools.setup(
     entry_points={
         "console_scripts": [
             "sim_cube_trajectory = three_wolves.scripts.sim_cube_trajectory:main",
+            "real_cube_trajectory = three_wolves.scripts.real_cube_trajectory:main",
         ],
     },
 )
