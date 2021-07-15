@@ -21,7 +21,7 @@ def main():
     env = phase_cube_env.RealPhaseControlEnv(goal_trajectory=goal_trajectory,
                                              visualization=False,
                                              args=model)
-    log_filename = f"/userhome/{model.model_name}.zip"
+    log_filename = f"/userhome/position_model.zip"
     policy = SAC.load(log_filename)
 
     observation = env.reset()
