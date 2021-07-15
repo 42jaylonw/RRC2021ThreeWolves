@@ -19,5 +19,5 @@ from .trifinger_platform import (  # noqa
 
 def get_data_dir() -> pathlib.Path:
     """Get path to the data directory of this package."""
-    p = pathlib.Path('/opt/blmc_ei/install/trifinger_simulation/lib/python3.8/site-packages/trifinger_simulation/')
+    p = pathlib.Path('/opt/blmc_ei/install/trifinger_simulation/lib/python3.8/site-packages/trifinger_simulation/data')
     return p.parent / "data"
