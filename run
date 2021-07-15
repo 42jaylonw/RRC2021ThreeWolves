@@ -4,8 +4,8 @@
 # work but using `ros2 run` works for C++ executables as well)
 
 # Examples for Stage 1
-#ros2 run three_wolves real_cube_trajectory "$@"
-ros2 run three_wolves sim_cube_trajectory "$@"
+ros2 run three_wolves real_cube_trajectory "$@"
+#ros2 run three_wolves sim_cube_trajectory "$@"
 
 # Example for Stage 2
 # ros2 run rrc_example_package dice_example_with_gym "$@"
