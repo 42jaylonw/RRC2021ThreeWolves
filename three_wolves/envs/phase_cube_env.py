@@ -295,8 +295,8 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
         # self.info["time_index"] = t*100
 
 class RealPhaseControlEnv(PhaseControlEnv):
-    # def __init__(self, goal_trajectory, visualization, args, action_type=ActionType.TORQUE_AND_POSITION):
-    #     super().__init__(goal_trajectory, visualization, args, action_type)
+    def __init__(self, goal_trajectory, visualization, args, action_type=ActionType.POSITION):
+        super().__init__(goal_trajectory, visualization, args, action_type)
 
     def _internal_step(self, action_dict):
         self.step_count += 1
