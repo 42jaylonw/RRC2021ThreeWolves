@@ -289,6 +289,63 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
             self.observer.update(obs_dict)
         # self.info["time_index"] = t*100
 
+class RealPhaseControlEnv(PhaseControlEnv):
+
+    def step(self, policy_action):
+        if self.platform is None:
+            raise RuntimeError("Call `reset()` before starting to step.")
+
+        if not self.action_space.contains(policy_action):
+            raise ValueError(
+                "Given action is not contained in the action space."
+            )
+
+        self.deep_wbc.update()
+        cur_phase_action = self.deep_wbc.get_action(policy_action)
+
+        # current action
+        obs_dict, eval_score = self._apply_action(cur_phase_action)
+
+        self.observer.update(obs_dict)
+        # reward = self.deep_wbc.get_reward()
+        max_episode = self.step_count >= task.EPISODE_LENGTH
+        done = max_episode  # or self.deep_wbc.get_done()
+
+        return self.observer.get_history_obs(), eval_score, done, self.info
+
+    def reset(self):
+        import robot_fingers
+        # cannot reset multiple times
+        if self.platform is not None:
+            raise RuntimeError(
+                "Once started, this environment cannot be reset."
+            )
+
+        self.platform = robot_fingers.TriFingerPlatformWithObjectFrontend()
+
+        self.deep_wbc.reset()
+
+        # get goal trajectory
+        if self.goal is None:
+            trajectory = task.sample_goal()
+        else:
+            trajectory = self.goal
+
+        self.info = {"time_index": -1, "trajectory": trajectory}
+        self.step_count = 0
+
+        # initial step
+        robot_action = self._gym_action_to_robot_action(self._initial_action)
+        t = self.platform.append_desired_action(robot_action)
+        self.info["time_index"] += 1
+        self.step_count += 1
+        self.tip_force_offset = self.platform.get_robot_observation(0).tip_force
+        obs_dict = self._create_observation(0)
+        self.observer.reset(obs_dict)
+        obs = self.observer.update(obs_dict)
+        self.init_control()
+        return obs
+
 
 if __name__ == '__main__':
     class A(object):
