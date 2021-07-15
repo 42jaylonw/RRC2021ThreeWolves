@@ -12,7 +12,12 @@ from .trifinger_platform import (  # noqa
 )
 
 
+# def get_data_dir() -> pathlib.Path:
+#     """Get path to the data directory of this package."""
+#     p = pathlib.Path(__file__)
+#     return p.parent / "data"
+
 def get_data_dir() -> pathlib.Path:
     """Get path to the data directory of this package."""
-    p = pathlib.Path(__file__)
+    p = pathlib.Path('/userhome/data')
     return p.parent / "data"
