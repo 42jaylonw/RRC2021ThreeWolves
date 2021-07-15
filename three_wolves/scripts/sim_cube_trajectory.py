@@ -17,7 +17,7 @@ def main():
         goal_trajectory = None
     model = M()
     env = phase_cube_env.PhaseControlEnv(goal_trajectory=goal_trajectory,
-                                         visualization=True,
+                                         visualization=False,
                                          args=model)
     log_filename = f"/userhome/{model.model_name}.zip"
     policy = SAC.load(log_filename)
