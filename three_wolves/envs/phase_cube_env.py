@@ -10,7 +10,6 @@ from three_wolves.envs.utilities.env_utils import HistoryWrapper, resetCamera
 from three_wolves.deep_whole_body_controller.deep_wbc import DeepWBC
 from three_wolves.deep_whole_body_controller.base_joint_controller import Control_Phase
 
-
 class PhaseControlEnv(BaseCubeTrajectoryEnv):
     def __init__(self,
                  goal_trajectory,
@@ -296,8 +295,15 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
         # self.info["time_index"] = t*100
 
 class RealPhaseControlEnv(PhaseControlEnv):
-    def __init__(self, goal_trajectory, visualization, args, action_type=ActionType.POSITION):
-        super().__init__(goal_trajectory, visualization, args, action_type)
+    def __init__(self,
+                 goal_trajectory,
+                 args,
+                 action_type=ActionType.POSITION):
+        super().__init__(goal_trajectory=goal_trajectory,
+                         visualization=False,
+                         args=args,
+                         action_type=action_type,
+                         robot_type='real')
 
     def _internal_step(self, action_dict):
         self.step_count += 1
@@ -360,7 +366,6 @@ class RealPhaseControlEnv(PhaseControlEnv):
         obs = self.observer.update(obs_dict)
         self.init_control(total_time=1)
         return obs
-
 
 if __name__ == '__main__':
     class A(object):
