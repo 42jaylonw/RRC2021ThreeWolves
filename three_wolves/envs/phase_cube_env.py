@@ -17,6 +17,7 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
                  visualization,
                  args,
                  action_type=ActionType.TORQUE_AND_POSITION,
+                 robot_type='sim',
                  history_num=3):
         super(PhaseControlEnv, self).__init__(
             goal_trajectory=goal_trajectory,
@@ -24,7 +25,7 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
             step_size=100)
 
         self.visualization = visualization
-        self.kinematics = pinocchio_utils.Kinematics()
+        self.kinematics = pinocchio_utils.Kinematics(robot_type)
         self.observer = HistoryWrapper(history_num)
         self.deep_wbc = DeepWBC(self.kinematics, self.observer, args)
         # create observation space
