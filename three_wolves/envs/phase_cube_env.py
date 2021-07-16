@@ -270,11 +270,11 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
 
     def init_control(self, total_time=0.2):
         # move tri-finger to init spot
-        total_step = int(total_time / 0.1)
+        total_step = int(total_time / (0.001 * self.step_size))
         init_tip_pos = np.hstack([self.observer.dt[f'tip_{i}_position'] for i in range(3)])
         cube_pos = self.observer.dt['object_position']
         tar_tip_pos = np.hstack([
-            np.add(cube_pos, [0.033, -0.01, 0]),  # arm_0 x+y+
+            np.add(cube_pos, [0.033, 0.0, 0]),  # arm_0 x+y+
             np.add(cube_pos, [0, -0.033, 0]),  # arm_1 x+y-
             np.add(cube_pos, [-0.033, 0, 0])  # arm_2 x-y+
         ])
@@ -357,7 +357,7 @@ class RealPhaseControlEnv(PhaseControlEnv):
         obs_dict = self._create_observation(0)
         self.observer.reset(obs_dict)
         obs = self.observer.update(obs_dict)
-        self.init_control()
+        self.init_control(total_time=1)
         return obs
 
 
