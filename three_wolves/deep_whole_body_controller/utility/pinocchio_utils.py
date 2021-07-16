@@ -19,8 +19,8 @@ class Kinematics:
             tip_link_names:  Names of the finger tip frames, one per finger.
         """
         # urdf_path = '/opt/blmc_ei/src/robot_properties_fingers/urdf/pro/trifingerpro.urdf'
-        urdf_path = '/opt/blmc_ei/install/robot_properties_fingers/share/robot_properties_fingers/urdf/pro/trifingerpro.urdf'
-        # urdf_path = 'trifinger_simulation/robot_properties_fingers/urdf/pro/trifingerpro.urdf'
+        # urdf_path = '/opt/blmc_ei/install/robot_properties_fingers/share/robot_properties_fingers/urdf/pro/trifingerpro.urdf'
+        urdf_path = 'trifinger_simulation/robot_properties_fingers/urdf/pro/trifingerpro.urdf'
         tip_link_names = [
             "finger_tip_link_0",
             "finger_tip_link_120",

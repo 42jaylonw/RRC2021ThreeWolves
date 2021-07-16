@@ -5,7 +5,7 @@ from three_wolves.deep_whole_body_controller import base_joint_controller
 from trifinger_simulation import trifingerpro_limits
 from three_wolves.deep_whole_body_controller.utility import trajectory, reward_utils, pc_reward
 # delete
-# from three_wolves.envs.utilities.env_utils import tag, clean
+from three_wolves.envs.utilities.env_utils import tag, clean
 
 class DRLPositionController(base_joint_controller.BaseJointController):
 
@@ -56,19 +56,30 @@ class DRLPositionController(base_joint_controller.BaseJointController):
         return to_goal_joints
 
     def compute_reward(self, model_name):
+        # basic reward
+        grasp_reward = pc_reward.GraspStability(self.observer.dt)
+        slippery_reward = pc_reward.TipSlippery(self.observer)
+        orn_reward = pc_reward.OrientationStability(self.observer.search('object_rpy'))
+
+        # goal reaching reward
         if model_name == 'tg':
             tar_arm_pos = self.tg(self.t)
-            tg_reward = pc_reward.TrajectoryFollowing(self.observer.dt, tar_arm_pos)
-            grasp_reward = pc_reward.GraspStability(self.observer.dt)
-            orn_reward = pc_reward.OrientationStability(self.observer.search('object_rpy'))
-            total_reward = tg_reward * 10 + grasp_reward + orn_reward
+            goal_reward = pc_reward.TrajectoryFollowing(self.observer.dt, tar_arm_pos) * 10
         elif model_name == 'vel':
             goal_reward = pc_reward.GoalDistReward(self.observer)
-            grasp_reward = pc_reward.GraspStability(self.observer.dt)
-            orn_reward = pc_reward.OrientationStability(self.observer.search('object_rpy'))
-            total_reward = goal_reward*2 + grasp_reward + orn_reward
+        elif model_name == 'tv':
+            tar_arm_pos = self.tg(self.t)
+            vel_reward = pc_reward.GoalDistReward(self.observer) * 5
+            tg_reward = pc_reward.TrajectoryFollowing(self.observer.dt, tar_arm_pos) * 5
+            goal_reward = tg_reward + vel_reward
+        elif model_name == 'tg_closer':
+            tar_arm_pos = self.tg(self.t)
+            goal_reward = pc_reward.TrajectoryFollowing(self.observer.dt, tar_arm_pos, wei=-1000) * 10
+            orn_reward *= 0.3
+            slippery_reward *= 2
         else:
-            raise NotImplemented('not support')
+            raise NotImplemented('not support reward type')
+        total_reward = goal_reward + grasp_reward + slippery_reward + orn_reward
         return total_reward
 
     def IsTouch(self):

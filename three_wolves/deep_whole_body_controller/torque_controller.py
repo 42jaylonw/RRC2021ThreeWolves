@@ -59,11 +59,16 @@ class QPTorqueController(base_joint_controller.BaseJointController):
         return np.array([f1, f2, f3])
 
     def compute_reward(self, model_name):
-        tar_arm_pos = self.tg(self.t)[0]
-        tg_reward = pc_reward.TrajectoryFollowing(self.observer.dt, tar_arm_pos)
+        # basic reward
         grasp_reward = pc_reward.GraspStability(self.observer.dt)
+        slippery_reward = pc_reward.TipSlippery(self.observer)
         orn_reward = pc_reward.OrientationStability(self.observer.search('object_rpy'))
-        total_reward = tg_reward * 10 + grasp_reward + orn_reward
+
+        # goal finding reward
+        tar_arm_pos = self.tg(self.t)[0]
+        goal_reward = pc_reward.TrajectoryFollowing(self.observer.dt, tar_arm_pos) * 10
+
+        total_reward = goal_reward + grasp_reward + slippery_reward + orn_reward
         return total_reward
 
     # def get_qp_action(self):
