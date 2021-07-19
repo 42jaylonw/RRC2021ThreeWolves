@@ -10,6 +10,7 @@ from three_wolves.envs.utilities.env_utils import HistoryWrapper, resetCamera
 from three_wolves.deep_whole_body_controller.deep_wbc import DeepWBC
 from three_wolves.deep_whole_body_controller.base_joint_controller import Control_Phase
 
+
 class PhaseControlEnv(BaseCubeTrajectoryEnv):
     def __init__(self,
                  goal_trajectory,
@@ -257,6 +258,7 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
 
         # current action
         obs_dict, eval_score = self._apply_action(cur_phase_action)
+        self.info['eval_score'] = eval_score
 
         self.observer.update(obs_dict)
         reward = self.deep_wbc.get_reward()
@@ -269,20 +271,29 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
         pass
 
     def init_control(self, total_time=0.2):
+        # todo: collision avoidance
         # move tri-finger to init spot
         total_step = int(total_time / (0.001 * self.step_size))
+        key_pos_to_obj = (
+            ((0.12, 0.0, 0.06), (0, -0.12, 0.06), (-0.12, 0, 0.06)),
+            ((0.03, 0.0, 0.0), (0, -0.03, 0.0), (-0.03, 0, 0.0))
+        )
+        for key_pos in key_pos_to_obj:
+            self._to_obj_point(key_pos, int(total_step/len(key_pos_to_obj)))
+
+    def _to_obj_point(self, tar_pos_to_obj, num_step):
         init_tip_pos = np.hstack([self.observer.dt[f'tip_{i}_position'] for i in range(3)])
         cube_pos = self.observer.dt['object_position']
         tar_tip_pos = np.hstack([
-            np.add(cube_pos, [0.033, 0.0, 0]),  # arm_0 x+y+
-            np.add(cube_pos, [0, -0.033, 0]),  # arm_1 x+y-
-            np.add(cube_pos, [-0.033, 0, 0])  # arm_2 x-y+
+            np.add(cube_pos, tar_pos_to_obj[0]),  # arm_0 x+y+
+            np.add(cube_pos, tar_pos_to_obj[1]),  # arm_1 x+y-
+            np.add(cube_pos, tar_pos_to_obj[2])   # arm_2 x-y+
         ])
         tg = trajectory.get_path_planner(init_pos=init_tip_pos,
                                          tar_pos=tar_tip_pos,
                                          start_time=0,
-                                         reach_time=total_step)
-        for t in range(total_step):
+                                         reach_time=num_step)
+        for t in range(num_step):
             tar_tip_pos = tg(t + 1)
             arm_joi_pos = self.observer.dt['joint_position']
             to_goal_joints, _error = self.kinematics.inverse_kinematics(tar_tip_pos.reshape(3, 3),
@@ -292,7 +303,8 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
                 'torque': None
             })
             self.observer.update(obs_dict)
-        # self.info["time_index"] = t*100
+        self.info["time_index"] = t*100
+
 
 class RealPhaseControlEnv(PhaseControlEnv):
     def __init__(self,
@@ -367,10 +379,10 @@ class RealPhaseControlEnv(PhaseControlEnv):
         self.init_control(total_time=1)
         return obs
 
+
 if __name__ == '__main__':
     class A(object):
-        model_name = 'vel'
-
+        model_name = 'tg'
 
     env = PhaseControlEnv(goal_trajectory=None,
                           visualization=True,
