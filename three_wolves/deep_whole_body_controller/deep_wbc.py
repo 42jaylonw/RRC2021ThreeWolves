@@ -9,14 +9,18 @@ class DeepWBC(BaseJointController):
     def __init__(
             self, kinematics, observer, args
     ):
-        self.position_controller = position_controller.DRLPositionController(kinematics, observer)
+        self.position_controller = position_controller.DRLPositionController(kinematics, observer, args.action_type)
         self.torque_controller = torque_controller.QPTorqueController(kinematics, observer)
         self.observer = observer
         self.args = args
 
-        # runtime property
-        self._phase = Control_Phase.TORQUE if 'force' in args.model_name \
-            else Control_Phase.POSITION
+        if args.controller_type == 'position':
+            self._phase = Control_Phase.POSITION
+        elif args.controller_type == 'force':
+            self._phase = Control_Phase.TORQUE
+        else:
+            raise NotImplemented()
+
         self._goal = None
 
     def get_action_space(self):
@@ -65,7 +69,10 @@ class DeepWBC(BaseJointController):
             raise NotImplemented()
 
     def get_done(self):
-        return self.position_controller.IsFar()
+        if self.args.action_type == 'full':
+            return self.position_controller.IsTooFar()
+        else:
+            return self.position_controller.IsFar()
 
     def get_control_mode(self):
         return self._phase

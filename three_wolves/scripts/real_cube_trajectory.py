@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import sys
 import json
-from three_wolves.envs import phase_cube_env
+from three_wolves.envs import phase_cube_env, position_cube_env
 from stable_baselines3 import SAC
 
 
@@ -18,8 +18,8 @@ def main():
     except IndexError:
         goal_trajectory = None
     model = M()
-    env = phase_cube_env.RealPhaseControlEnv(goal_trajectory=goal_trajectory,
-                                             args=model)
+    env = position_cube_env.RealPositionControlEnv(goal_trajectory=goal_trajectory,
+                                                   args=model)
     log_filename = f"/userhome/position_model.zip"
     policy = SAC.load(log_filename)
 

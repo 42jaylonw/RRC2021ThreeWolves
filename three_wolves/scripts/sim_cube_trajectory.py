@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import sys
 import json
-from three_wolves.envs import phase_cube_env
+from three_wolves.envs import phase_cube_env, position_cube_env
 from stable_baselines3 import SAC
 
 class M:
