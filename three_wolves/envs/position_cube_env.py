@@ -319,7 +319,7 @@ class RealPositionControlEnv(PositionControlEnv):
             )
 
         self.deep_wbc.update()
-        cur_phase_action = self.deep_wbc.get_action(policy_action)
+        cur_phase_action = self.deep_wbc.get_action(policy_action)['position']
 
         # current action
         obs_dict, eval_score = self._apply_action(cur_phase_action)
