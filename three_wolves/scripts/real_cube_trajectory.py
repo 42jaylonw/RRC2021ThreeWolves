@@ -8,6 +8,8 @@ from stable_baselines3 import SAC
 class M:
     def __init__(self, model_name='tg'):
         self.model_name = model_name
+        self.controller_type = 'position'
+        self.action_type = 'residuals'
 
 
 def main():
