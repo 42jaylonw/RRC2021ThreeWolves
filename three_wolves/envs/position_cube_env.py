@@ -307,7 +307,6 @@ class RealPositionControlEnv(PositionControlEnv):
         # send action to robot
         robot_action = self._gym_action_to_robot_action(action)
         t = self.platform.append_desired_action(robot_action)
-        self.init_control(total_time=1.0)
         return t
 
     def step(self, policy_action):
