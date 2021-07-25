@@ -13,14 +13,14 @@ from three_wolves.deep_whole_body_controller.base_joint_controller import Contro
 from  three_wolves.deep_whole_body_controller.utility import trajectory
 
 class PhaseControlEnv(BaseCubeTrajectoryEnv):
-    def __init__(self, goal_trajectory, visualization, history_num=3):
+    def __init__(self, goal_trajectory, visualization, history_num=3, robot_type='sim'):
         super(PhaseControlEnv, self).__init__(
             goal_trajectory=goal_trajectory,
             action_type=ActionType.TORQUE,
             step_size=1)
         self.visualization = visualization
         self.observer = HistoryWrapper(history_num)
-        self.deep_wbc = DeepWBC(self.observer, self.step_size)
+        self.deep_wbc = DeepWBC(self.observer, self.step_size, robot_type)
         # create observation space
         _duplicate = lambda x: np.array([x] * history_num).flatten()
 
@@ -211,10 +211,10 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
 
 class RealPhaseControlEnv(PhaseControlEnv):
     def __init__(self,
-                 goal_trajectory,
-                 action_type=ActionType.TORQUE):
+                 goal_trajectory):
         super().__init__(goal_trajectory=goal_trajectory,
-                         visualization=False)
+                         visualization=False,
+                         robot_type='real')
 
     def _internal_step(self, action_dict):
         self.step_count += 1

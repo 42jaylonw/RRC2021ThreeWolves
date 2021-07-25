@@ -6,9 +6,9 @@ from three_wolves.deep_whole_body_controller.utility import pinocchio_utils, tra
 
 class DeepWBC:
     def __init__(
-            self, observer, step_size
+            self, observer, step_size, robot_type
     ):
-        self.kinematics = pinocchio_utils.Kinematics()
+        self.kinematics = pinocchio_utils.Kinematics(robot_type)
         self.contact_planner = contact_planner.ContactPlanner()
         self.torque_controller = torque_controller.QPTorqueController(self.kinematics, observer, step_size)
         self.observer = observer
