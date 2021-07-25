@@ -216,10 +216,10 @@ class RealPhaseControlEnv(PhaseControlEnv):
                          visualization=False,
                          robot_type='real')
 
-    def _internal_step(self, action_dict):
+    def _internal_step(self, action):
         self.step_count += 1
         # send action to robot
-        robot_action = self._gym_action_to_robot_action(action_dict['position'])
+        robot_action = self._gym_action_to_robot_action(action)
         t = self.platform.append_desired_action(robot_action)
         return t
 
