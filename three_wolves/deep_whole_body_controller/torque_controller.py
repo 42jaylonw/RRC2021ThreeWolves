@@ -1,11 +1,11 @@
-import sys
-import time
+# import sys
+# import time
 
-import gym
+# import gym
 import numpy as np
-from trifinger_simulation import trifingerpro_limits
-from three_wolves.deep_whole_body_controller import qp_torque_optimizer
-from three_wolves.deep_whole_body_controller.utility import trajectory, reward_utils, pinocchio_utils
+# from trifinger_simulation import trifingerpro_limits
+# from three_wolves.deep_whole_body_controller import qp_torque_optimizer
+# from three_wolves.deep_whole_body_controller.utility import trajectory, reward_utils, pinocchio_utils
 from three_wolves.deep_whole_body_controller.utility import trajectory, reward_utils, pc_reward
 from three_wolves.envs.utilities.env_utils import *
 
