@@ -1,78 +1,66 @@
 import numpy as np
 import gym
-from three_wolves.deep_whole_body_controller import position_controller, torque_controller
-from three_wolves.deep_whole_body_controller.base_joint_controller import BaseJointController, Control_Phase
+from three_wolves.deep_whole_body_controller import position_controller, torque_controller, contact_planner
+from three_wolves.deep_whole_body_controller.base_joint_controller import Control_Phase
+from three_wolves.deep_whole_body_controller.utility import pinocchio_utils, trajectory, reward_utils, pc_reward
 
-
-class DeepWBC(BaseJointController):
-
+class DeepWBC:
     def __init__(
-            self, kinematics, observer, args
+            self, observer, step_size
     ):
-        self.position_controller = position_controller.DRLPositionController(kinematics, observer, args.action_type)
-        self.torque_controller = torque_controller.QPTorqueController(kinematics, observer)
+        self.kinematics = pinocchio_utils.Kinematics()
+        self.contact_planner = contact_planner.ContactPlanner()
+        self.torque_controller = torque_controller.QPTorqueController(self.kinematics, observer, step_size)
         self.observer = observer
-        self.args = args
+        self.step_size = step_size
 
-        if args.controller_type == 'position':
-            self._phase = Control_Phase.POSITION
-        elif args.controller_type == 'force':
-            self._phase = Control_Phase.TORQUE
-        else:
-            raise NotImplemented()
-
-        self._goal = None
+        # runtime property
+        self._phase = Control_Phase.TORQUE
+        self._last_goal = None
+        self.apply_action = None
 
     def get_action_space(self):
-        if self._phase == Control_Phase.TORQUE:
-            return self.torque_controller.robot_action_space
-        elif self._phase == Control_Phase.POSITION:
-            return self.position_controller.robot_action_space
-        else:
-            raise NotImplemented('not support')
+        return self.contact_planner.action_space
 
-    def reset(self):
-        self.position_controller.reset()
+    def reset(self, apply_action):
+        self.apply_action = apply_action
         self.torque_controller.reset()
+        self.drop_times = 0
 
-    def update(self):
-        if self._goal is None or all(self._goal != self.observer.dt['goal_position']):
-            self._goal = self.observer.dt['goal_position']
-            self.position_controller.update()
-            self.torque_controller.update()
+    def update(self, policy_action):
+        # if self._last_goal is None or all(self._last_goal != self.observer.dt['goal_position']):
+        self._last_goal = self.observer.dt['goal_position']
+        contact_face_ids, contact_points = self.contact_planner.compute_contact_points(policy_action)
+        self.torque_controller.update(contact_points, contact_face_ids)
 
-    def _select_action(self, policy_action):
-        if self._phase == Control_Phase.TORQUE:
-            torque_action = self.torque_controller.get_action(policy_action)
-            action = np.array(torque_action, dtype=np.float32)
-            return {'position': None, 'torque': action}
-        elif self._phase == Control_Phase.POSITION:
-            position_action = self.position_controller.get_action(policy_action)
-            action = np.array(position_action, dtype=np.float32)
-            return {'position': action, 'torque': None}
-        else:
-            raise NotImplemented('not support other phase now')
+    def step(self, policy_action):
+        self.update(policy_action)
+        self.torque_controller.tips_reach(self.apply_action)
+        # self._last_goal = None
+        self.reward = 0
+        while not self.Dropped():
+            if list(self._last_goal) != list(self.observer.dt['goal_position']):
+                self.update(policy_action)
+            cur_phase_action = self.get_action()
+            self.apply_action(cur_phase_action)
+            self.reward += self.torque_controller.get_reward()*0.001*self.step_size
+        self.drop_times += 1
 
-    def get_action(self, policy_action):
-        # if ?:
-        #     self._phase = Control_Phase.TORQUE
-        # else:
-        #     self._phase = Control_Phase.POSITION
-        return self._select_action(policy_action)
+    def get_action(self):
+        action = self.torque_controller.get_action()
+        return action
 
     def get_reward(self):
-        if self._phase == Control_Phase.TORQUE:
-            return self.torque_controller.compute_reward(self.args.model_name)
-        elif self._phase == Control_Phase.POSITION:
-            return self.position_controller.compute_reward(self.args.model_name)
-        else:
-            raise NotImplemented()
+        return self.reward
 
     def get_done(self):
-        if self.args.action_type == 'full':
-            return self.position_controller.IsTooFar()
-        else:
-            return self.position_controller.IsFar()
+        return self.drop_times >= 2
 
-    def get_control_mode(self):
-        return self._phase
+    def Dropped(self):
+        tip_force = self.observer.dt['tip_force']
+        cube_pos = np.array(self.observer.dt['object_position'])
+        tri_distance = [reward_utils.ComputeDist(self.observer.dt['tip_0_position'], cube_pos),
+                        reward_utils.ComputeDist(self.observer.dt['tip_1_position'], cube_pos),
+                        reward_utils.ComputeDist(self.observer.dt['tip_2_position'], cube_pos)]
+        is_dropped = list(tip_force).count(0.) > 1 or any(np.array(tri_distance) > 0.7)
+        return is_dropped

@@ -18,7 +18,6 @@ class Kinematics:
             finger_urdf_path:  Path to the URDF file describing the robot.
             tip_link_names:  Names of the finger tip frames, one per finger.
         """
-        # urdf_path = '/opt/blmc_ei/src/robot_properties_fingers/urdf/pro/trifingerpro.urdf'
         if robot_type == 'real':
             urdf_path = '/opt/blmc_ei/install/robot_properties_fingers/share/robot_properties_fingers/urdf/pro/trifingerpro.urdf'
         elif robot_type == 'sim':
@@ -59,7 +58,7 @@ class Kinematics:
         ]
 
     def _inverse_kinematics_step(
-        self, frame_id: int, xdes: np.ndarray, q0: np.ndarray
+            self, frame_id: int, xdes: np.ndarray, q0: np.ndarray
     ) -> typing.Tuple[np.ndarray, np.ndarray]:
         """Compute one IK iteration for a single finger."""
         dt = 1.0e-1
@@ -90,12 +89,12 @@ class Kinematics:
         return qnext, err
 
     def inverse_kinematics_one_finger(
-        self,
-        finger_idx: int,
-        tip_target_position: np.ndarray,
-        joint_angles_guess: np.ndarray,
-        tolerance: float = 0.005,
-        max_iterations: int = 1000,
+            self,
+            finger_idx: int,
+            tip_target_position: np.ndarray,
+            joint_angles_guess: np.ndarray,
+            tolerance: float = 0.005,
+            max_iterations: int = 1000,
     ) -> typing.Tuple[np.ndarray, np.ndarray]:
         """Inverse kinematics for a single finger.
 
@@ -125,11 +124,11 @@ class Kinematics:
         return q, err
 
     def inverse_kinematics(
-        self,
-        tip_target_positions: typing.Iterable[np.ndarray],
-        joint_angles_guess: np.ndarray,
-        tolerance: float = 0.005,
-        max_iterations: int = 1000,
+            self,
+            tip_target_positions: typing.Iterable[np.ndarray],
+            joint_angles_guess: np.ndarray,
+            tolerance: float = 0.005,
+            max_iterations: int = 1000,
     ) -> typing.Tuple[np.ndarray, typing.List[np.ndarray]]:
         """Inverse kinematics for the whole manipulator.
 
@@ -174,3 +173,38 @@ class Kinematics:
             frame_id,
             pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED,
         )
+
+    def compute_all_jacobian(self, q0):
+        jacobian = np.array([self.compute_jacobian(i, q0)[:3, i * 3:i * 3 + 3] for i in range(3)])
+        return jacobian
+
+    def map_contact_force_to_joint_torque(self, contact_forces, joint_positions):
+        jacobian = np.array([self.compute_jacobian(i, joint_positions)[:3, i * 3:i * 3 + 3] for i in range(3)])
+        motor_torques = []
+        for f, jv in zip(contact_forces, jacobian):
+            motor_torques.append(np.matmul(f, jv))
+
+        all_motor_torques = np.hstack(motor_torques)
+        return all_motor_torques
+
+    def pybullet_jacobian(self, robot, contact_forces, joint_positions):
+        import pybullet as p
+        import matplotlib.pyplot as plt
+        tip_ids = robot.simfinger.pybullet_tip_link_indices
+        _joint_positions = [state[0] for state in p.getJointStates(1, robot.simfinger.pybullet_joint_indices)]
+        # bodyUniqueId, linkIndex, localPosition, objPositions, objVelocities, objAccelerations
+        jacobian_bullet = np.array([np.array(p.calculateJacobian(bodyUniqueId=1,
+                                                                 linkIndex=tip_ids[i],
+                                                                 localPosition=(0, 0, 0),
+                                                                 objPositions=list(joint_positions),
+                                                                 objVelocities=[0] * len(joint_positions),
+                                                                 objAccelerations=[0] * len(joint_positions),
+                                                                 physicsClientId=0)[0])[:, i * 3:i * 3 + 3]
+                                    for i in range(3)])
+        jacobian = np.array([self.compute_jacobian(i, joint_positions)[:3, i * 3:i * 3 + 3] for i in range(3)])
+        motor_torques = []
+        for f, jv in zip(contact_forces, jacobian):
+            motor_torques.append(np.matmul(f, jv))
+
+        all_motor_torques = np.hstack(motor_torques)
+        return all_motor_torques

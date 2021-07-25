@@ -39,6 +39,10 @@ class HistoryWrapper:
         return self.get_history_obs()
 
     def update(self, obs_dict):
+        if not self.dt:
+            self.dt = obs_dict
+            return self.reset(obs_dict)
+
         self.dt = obs_dict
         for k, v in obs_dict.items():
             assert len(v) == len(self._history_obs[k][0]), 'wrong shape'

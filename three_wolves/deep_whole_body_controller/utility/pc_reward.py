@@ -46,3 +46,61 @@ def IsNear(obs_dict):
         utils.ComputeDist(obs_dict['object_position'], obs_dict[f'tip_{i}_position']) for i in range(3)
     ])
     return all(np.array(tip_to_obj_positions) < 0.055)
+
+
+def clip_yaw(theta, c=np.pi/4):
+    # if abs(theta) > c:
+    #     theta = theta % c if theta > 0 else theta % -c
+    # if theta < 0:
+    #     theta = c - abs(theta) % c
+
+    # if abs(theta) > c:
+    #     alpha = abs(theta) % c
+    #     if theta < 0:
+    #         alpha = c - abs(theta) % c
+    # else:
+    #     if theta < 0:
+    #         alpha = c - abs(theta) % c
+    #     else:
+    #         alpha = theta
+
+    # if abs(theta) > c:
+    #     if theta >= 0:
+    #         alpha = theta % c
+    #         beta = alpha - c
+    #     else:
+    #         alpha = theta % -c
+    #         beta = alpha + c
+    # else:
+    #     if theta >= 0:
+    #         beta = theta
+    #     else:
+    #         beta = theta
+
+    # if theta >= c:
+    #     alpha = theta % c
+    #     beta = c - alpha
+    #     # beta = alpha
+    # else:
+    #     theta = abs(theta)
+    #     alpha = theta % c
+    #     beta = -np.pi/2 + alpha
+    if theta < -c or theta > c:
+        n = (theta + c) // (2*c)
+        beta = theta - np.pi*n/2
+    else:
+        beta = theta
+
+    return beta
+
+
+if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+    import numpy as np
+    plt.figure(figsize=(6, 6))
+    yaw = np.linspace(-2*np.pi, 2*np.pi, 1000)
+    plt.plot(yaw, yaw, label='yaw')
+    plt.plot(yaw, [clip_yaw(y) for y in yaw], label='clipped')
+    plt.legend()
+    plt.show()
+

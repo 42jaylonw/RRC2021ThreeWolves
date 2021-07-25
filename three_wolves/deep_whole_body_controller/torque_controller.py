@@ -1,100 +1,205 @@
+import sys
+import time
+
 import gym
 import numpy as np
-
-from three_wolves.deep_whole_body_controller import base_joint_controller
-# from trifinger_simulation import trifingerpro_limits
-# from three_wolves.deep_whole_body_controller import qp_torque_optimizer
-# from three_wolves.deep_whole_body_controller.utility import trajectory, reward_utils, pinocchio_utils
+from trifinger_simulation import trifingerpro_limits
+from three_wolves.deep_whole_body_controller import qp_torque_optimizer
+from three_wolves.deep_whole_body_controller.utility import trajectory, reward_utils, pinocchio_utils
 from three_wolves.deep_whole_body_controller.utility import trajectory, reward_utils, pc_reward
+from three_wolves.envs.utilities.env_utils import *
 
-class QPTorqueController(base_joint_controller.BaseJointController):
+CUBE_MASS = 0.094
+CUBE_INERTIA = np.array([[0.00006619, 0, 0],
+                         [0, 0.00006619, 0],
+                         [0, 0, 0.00006619]])
 
-    def __init__(self, kinematics, observer):
+
+class QPTorqueController:
+
+    def __init__(self, kinematics, observer, step_size):
+        self.step_size = step_size
         self.kinematics = kinematics
         self.observer = observer
         # min max force (0.094 * 9.8)/0.45
-        self.robot_action_space = gym.spaces.Box(
-            low=np.full(3, -2.047, dtype=np.float32),
-            high=np.full(3, 2.047, dtype=np.float32),
-        )
+        # self.robot_action_space = gym.spaces.Box(
+        #     low=np.full(3, -2.047, dtype=np.float32),
+        #     high=np.full(3, 2.047, dtype=np.float32),
+        # )
         self.t = 0
         self.tg = None
+        self.desired_contact_points = None
+        self.contact_face_ids = None
+        self.desired_speed = 0.2
 
     def reset(self):
         pass
 
-    def update(self):
-        desired_speed = 0.2
-        obj_goal_dist = reward_utils.ComputeDist(self.observer.dt['object_position'],
-                                                 self.observer.dt['goal_position'])
-        total_time = obj_goal_dist / desired_speed
-        reach_time = int(total_time / 0.1) + 1
+    def reset_tg(self, init_pos, tar_pos):
+        # obj_goal_dist = reward_utils.ComputeDist(self.observer.dt['object_position'],
+        #                                          self.observer.dt['goal_position'])
+        # total_time = obj_goal_dist / self.desired_speed
+        # self.t = 0
+        # self.tg = trajectory.get_acc_planner(init_pos=self.observer.dt['object_position'],
+        #                                      tar_pos=self.observer.dt['goal_position'],
+        #                                      start_time=0,
+        #                                      reach_time=total_time)
+        obj_goal_dist = reward_utils.ComputeDist(init_pos, tar_pos)
+        total_time = obj_goal_dist / self.desired_speed
         self.t = 0
-        self.tg = trajectory.get_acc_planner(init_pos=self.observer.dt['object_position'],
-                                             tar_pos=self.observer.dt['goal_position'],
+        self.tg = trajectory.get_acc_planner(init_pos=init_pos,
+                                             tar_pos=tar_pos,
                                              start_time=0,
-                                             reach_time=reach_time)
+                                             reach_time=total_time)
 
-    def get_action(self, policy_action):
-        f1 = policy_action
-        contact_forces = self.compute_contact_forces(f1, self.tg(self.t)[2])
-        motor_torque_list = []
-        for i, contact_force in enumerate(contact_forces):
-            jv = self.kinematics.compute_jacobian(i, self.observer.dt['joint_position'])[:3, i * 3:i * 3 + 3]
-            motor_torque = np.matmul(contact_force, jv)
-            motor_torque_list.append(motor_torque)
-        self.t += 1
-        return np.hstack(motor_torque_list)
+    def update(self, contact_points, contact_face_ids):
+        self.contact_face_ids = contact_face_ids
+        self.desired_contact_points = contact_points
+        self.reset_tg(self.observer.dt['object_position'], self.observer.dt['goal_position'])
 
-    def compute_contact_forces(self, f1, a, robot_mass=0.094):
-        F = a * robot_mass + robot_mass * 9.8
-        r = np.array([np.subtract(self.observer.dt['tip_0_position'], self.observer.dt['object_position']),
-                      np.subtract(self.observer.dt['tip_1_position'], self.observer.dt['object_position']),
-                      np.subtract(self.observer.dt['tip_2_position'], self.observer.dt['object_position'])])
-        # ZeroDivisionError
-        _denominator = (r[2] - r[1])
-        _denominator[abs(_denominator) < 0.001] = np.inf
-        f2 = ((r[0] - r[1]) / _denominator) * f1 + (r[2] / _denominator) * F
-        f3 = F - f1 - f2
-        return np.array([f1, f2, f3])
+    def get_action(self):
+        cube_pos = np.array(self.observer.dt['object_position'])
+        # cube_rpy = np.array(self.observer.dt['object_rpy'])
+        real_contact_points = np.array([
+            np.subtract(self.observer.dt[f'tip_{i}_position'], cube_pos) for i in range(3)
+        ])
+        # CUBE_rotate_contact_pos = np.array([trajectory.Rotate([0, 0, self._get_clip_yaw()], c)
+        #                                     for c in real_contact_points])
+        # WRD_contact_pos = np.add(cube_pos, CUBE_rotate_contact_pos)
 
-    def compute_reward(self, model_name):
-        # basic reward
-        grasp_reward = pc_reward.GraspStability(self.observer.dt)
-        slippery_reward = pc_reward.TipSlippery(self.observer)
-        orn_reward = pc_reward.OrientationStability(self.observer.search('object_rpy'))
+        desired_acc = np.hstack([self.tg(self.t)[2], [0] * 3])
+        contact_forces = qp_torque_optimizer.compute_contact_force(
+            robot_mass=CUBE_MASS,
+            robot_inertia=CUBE_INERTIA,
+            contact_face_ids=self.contact_face_ids,
+            contact_position=real_contact_points,
+            desired_acc=desired_acc,
+        )
 
-        # goal finding reward
-        tar_arm_pos = self.tg(self.t)[0]
-        goal_reward = pc_reward.TrajectoryFollowing(self.observer.dt, tar_arm_pos) * 10
+        rotate_contact_forces = trajectory.Rotate([0, 0, self._get_clip_yaw()],
+                                                  contact_forces).reshape(3, 3)
+        desired_position = self.tg(self.t)[0] + self.desired_contact_points
+        desired_joint_position, _ = self.kinematics.inverse_kinematics(desired_position,
+                                                                       self.observer.dt['joint_position'])
+        all_pd_torque = self.compute_pd_control_torques(joint_positions=desired_joint_position)
 
-        total_reward = goal_reward + grasp_reward + slippery_reward + orn_reward
-        return total_reward
+        motor_torques = self.kinematics.map_contact_force_to_joint_torque(rotate_contact_forces,
+                                                                          self.observer.dt['joint_position'])
 
-    # def get_qp_action(self):
-    #     robot_info = {
-    #         'body_mass': 0.094,
-    #         'body_inertia': np.array([0.00006619, 0, 0,
-    #                                   0, 0.00006619, 0,
-    #                                   0, 0, 0.00006619]),
-    #         'tip_position': np.array([np.subtract(self.observer.dt['tip_0_position'], self.observer.dt['object_position']),
-    #                                   np.subtract(self.observer.dt['tip_1_position'], self.observer.dt['object_position']),
-    #                                   np.subtract(self.observer.dt['tip_2_position'], self.observer.dt['object_position'])])
-    #     }
+        all_torques = all_pd_torque + motor_torques
+        self.t += 0.001*self.step_size
+        return all_torques
+
+    def compute_pd_control_torques(self, joint_positions):
+        kp = np.array([15.0, 15.0, 9.0] * 3)
+        kd = np.array([0.5, 1.0, 0.5] * 3)
+        current_position = self.observer.dt['joint_position']
+        current_velocity = self.observer.dt['joint_velocity']
+        position_error = joint_positions - current_position
+
+        position_feedback = np.asarray(kp) * position_error
+        velocity_feedback = np.asarray(kd) * current_velocity
+
+        joint_torques = position_feedback - velocity_feedback
+
+        # set nan entries to zero (nans occur on joints for which the target
+        # position was set to nan)
+        joint_torques[np.isnan(joint_torques)] = 0.0
+
+        return joint_torques
+
+    # def tips_reach(self, apply_action, total_time=1.0):
+    #     # total_step = int(total_time / (0.001 * self.step_size))
+    #     init_tip_pos = np.hstack([self.observer.dt[f'tip_{i}_position'] for i in range(3)])
+    #     # tar_tip_pos = np.hstack([
+    #     #     np.add(self.observer.dt['object_position'], [0.0325, 0.0, 0]),  # arm_0 x+y+
+    #     #     np.add(self.observer.dt['object_position'], [0, -0.0325, 0]),  # arm_1 x+y-
+    #     #     np.add(self.observer.dt['object_position'], [-0.0325, 0.0, 0])  # arm_2 x-y+
+    #     # ])
+    #     # for contact in self.desired_contact_points:
+    #         # todo: maybe rotate ?
+    #         # real_contact_pos = trajectory.Rotate(self.observer.dt[f'object_rpy'], self.desired_contact_points)
+    #         # tar_tip_pos.append([self.observer.dt['object_position'] + contact])
+    #     tar_tip_pos = self.observer.dt['object_position'] + self.desired_contact_points
+    #     dist = reward_utils.ComputeDist(init_tip_pos[:3], self.desired_contact_points[:3])
+    #     task_time = dist / self.desired_speed
+    #     tg = trajectory.get_path_planner(init_pos=init_tip_pos,
+    #                                      tar_pos=tar_tip_pos.flatten(),
+    #                                      start_time=0,
+    #                                      reach_time=task_time)
+    #     t = 0
+    #     while t < total_time:
+    #         tg_tip_pos = tg(t)
+    #         arm_joi_pos = self.observer.dt['joint_position']
+    #         to_goal_joints, _error = self.kinematics.inverse_kinematics(tg_tip_pos.reshape(3, 3),
+    #                                                                     arm_joi_pos)
+    #         to_goal_torques = self.compute_pd_control_torques(to_goal_joints)
+    #         obs_dict, eval_score = apply_action(to_goal_torques)
+    #         t += 0.001*self.step_size
+    #     self.observer.update(obs_dict)
+
+    def _get_clip_yaw(self, c=np.pi/4):
+        # transfer to -pi/2 to pi/2
+        theta = self.observer.dt['object_rpy'][2]
+        if theta < -c or theta > c:
+            n = (theta + c) // (2 * c)
+            beta = theta - np.pi * n / 2
+        else:
+            beta = theta
+
+        return beta
+
+    def tips_reach(self, apply_action, total_time=2.0):
+        pre_contact_pos = self.desired_contact_points*3 + [0, 0, 0.08]
+        key_points = [pre_contact_pos, self.desired_contact_points]
+        key_interval = [total_time*0.4, total_time*0.6]
+        for points, interval in zip(key_points, key_interval):
+            _clip_yaw = self._get_clip_yaw()
+            rotated_key_pos = np.array([trajectory.Rotate([0, 0, _clip_yaw], points[i]) for i in range(3)])
+            tar_tip_pos = self.observer.dt['object_position'] + rotated_key_pos
+            self._to_point(apply_action, tar_tip_pos, interval)
+
+    def _to_point(self, apply_action, tar_tip_pos, total_time):
+        init_tip_pos = np.hstack([self.observer.dt[f'tip_{i}_position'] for i in range(3)])
+        # tar_tip_pos = self.observer.dt['object_position'] + self.desired_contact_points
+        # dist = reward_utils.ComputeDist(init_tip_pos[:3], self.desired_contact_points[:3])
+        # task_time = dist / self.desired_speed
+        # time.sleep(total_time*0.2)
+        tg = trajectory.get_path_planner(init_pos=init_tip_pos,
+                                         tar_pos=tar_tip_pos.flatten(),
+                                         start_time=0,
+                                         reach_time=total_time*0.7)
+        t = 0
+        while t < total_time:
+            tg_tip_pos = tg(t)
+            arm_joi_pos = self.observer.dt['joint_position']
+            to_goal_joints, _error = self.kinematics.inverse_kinematics(tg_tip_pos.reshape(3, 3),
+                                                                        arm_joi_pos)
+            to_goal_torques = self.compute_pd_control_torques(to_goal_joints)
+            obs_dict, eval_score = apply_action(to_goal_torques)
+            t += 0.001*self.step_size
+        self.observer.update(obs_dict)
+
+    def get_reward(self):
+        goal_reward = pc_reward.TrajectoryFollowing(self.observer.dt, self.tg(self.t)[0])
+        return goal_reward
+
+    # def compute_contact_forces(self, f1, a, robot_mass=0.094):
+    #     F = a * robot_mass + np.array([0, 0, robot_mass * 9.8])
+    #     r = np.array([np.subtract(self.observer.dt['tip_0_position'], self.observer.dt['object_position']),
+    #                   np.subtract(self.observer.dt['tip_1_position'], self.observer.dt['object_position']),
+    #                   np.subtract(self.observer.dt['tip_2_position'], self.observer.dt['object_position'])])
+    #     # ZeroDivisionError
+    #     _denominator = (r[2] - r[1])
+    #     _denominator[_denominator == 0] = np.inf
+    #     f2 = ((r[0] - r[1]) / _denominator) * f1 + (r[2] / _denominator) * F
+    #     f3 = F - f1 - f2
+    #     return np.array([f1, f2, f3])
     #
-    #     contacts = [f > 0.1 for f in self.observer.dt['tip_force']]
-    #     desired_acc = np.hstack([self.tg(self.t), [0]*3])
-    #     contact_forces = qp_torque_optimizer.compute_contact_force(robot_info=robot_info,
-    #                                                                desired_acc=desired_acc,
-    #                                                                contacts=contacts)
-    #     print(contact_forces)
-    #     finger_id = [0, 1, 2]
-    #     motor_torque_list = []
-    #     for i, contact_force in enumerate(contact_forces):
-    #         jv = self.kinematics.compute_jacobian(i, self.observer.dt['joint_position'])[:3, i*3:i*3+3]
-    #         motor_torque = np.matmul(contact_force, jv)
-    #         motor_torque_list.append(motor_torque)
-    #
-    #     self.t += 1
-    #
-    #     return np.hstack(motor_torque_list)
+    # def compute_reward(self, model_name):
+    #     tar_arm_pos = self.tg(self.t)[0]
+    #     tg_reward = pc_reward.TrajectoryFollowing(self.observer.dt, tar_arm_pos)
+    #     grasp_reward = pc_reward.GraspStability(self.observer.dt)
+    #     orn_reward = pc_reward.OrientationStability(self.observer.search('object_rpy'))
+    #     total_reward = tg_reward * 10 + grasp_reward + orn_reward
+    #     return total_reward

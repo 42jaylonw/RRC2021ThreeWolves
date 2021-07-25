@@ -1,14 +1,17 @@
 import numpy as np
 import quadprog
+import matplotlib.pyplot as plt
 
 np.set_printoptions(precision=3, suppress=True)
 
-ACC_WEIGHT = np.array([1., 1., 1., 10., 10, 1.])
+ACC_WEIGHT = np.array([1., 1., 10., 1., 1., 1.])
 
-def compute_mass_matrix(robot_mass, robot_inertia, tip_positions):
-    # yaw = 0.  # Set yaw to 0 for now as all commands are local.
-    # rot_z = np.array([[np.cos(yaw), np.sin(yaw), 0.],
-    #                   [-np.sin(yaw), np.cos(yaw), 0.],
+
+def compute_mass_matrix(robot_mass, robot_inertia, tip_positions, cube_yaw=None):
+    # todo: consider roll and pitch ?
+    # yaw = cube_yaw  # Set yaw to 0 for now as all commands are local.
+    # rot_z = np.array([[np.cos(cube_yaw), np.sin(cube_yaw), 0.],
+    #                   [-np.sin(cube_yaw), np.cos(cube_yaw), 0.],
     #                   [0., 0., 1.]])
     rot_z = np.eye(3)
 
@@ -28,9 +31,10 @@ def compute_mass_matrix(robot_mass, robot_inertia, tip_positions):
 
 
 def compute_constraint_matrix(body_mass,
-                              friction_coef=0.8,
-                              f_min_ratio=0,
-                              f_max_ratio=100):
+                              friction_coef,
+                              contact_face_ids,
+                              f_min_ratio,
+                              f_max_ratio):
     f_min = f_min_ratio * body_mass * 9.8 / friction_coef
     f_max = f_max_ratio * body_mass * 9.8 / friction_coef
 
@@ -46,80 +50,81 @@ def compute_constraint_matrix(body_mass,
             A[limb_id * 2, limb_id * 3 + 1] = 1
             A[limb_id * 2 + 1, limb_id * 3 + 1] = -1
 
-    A[6, :] = [friction_coef, 1] + [0] * 7
-    A[7, :] = [friction_coef, -1] + [0] * 7
-    A[8, :] = [friction_coef, 0, 1] + [0] * 6
-    A[9, :] = [friction_coef, 0, -1] + [0] * 6
-    A[10, :] = [0] * 3 + [1, friction_coef, 0] + [0] * 3
-    A[11, :] = [0] * 3 + [-1, friction_coef, 0] + [0] * 3
-    A[12, :] = [0] * 3 + [0, friction_coef, 1] + [0] * 3
-    A[13, :] = [0] * 3 + [0, friction_coef, -1] + [0] * 3
-    A[14, :] = [0] * 6 + [friction_coef, 1, 0]
-    A[15, :] = [0] * 6 + [friction_coef, -1, 0]
-    A[16, :] = [0] * 6 + [friction_coef, 0, 1]
-    A[17, :] = [0] * 6 + [friction_coef, 0, -1]
+    face_dict = {
+        0: (
+            [1, friction_coef, 0],
+            [-1, friction_coef, 0],
+            [0, friction_coef, 1],
+            [0, friction_coef, -1],
+        ),
+        1: (
+            [-friction_coef, 1, 0],
+            [-friction_coef, -1, 0],
+            [-friction_coef, 0, 1],
+            [-friction_coef, 0, -1],
+        ),
+        2: (
+            [1, -friction_coef, 0],
+            [-1, -friction_coef, 0],
+            [0, -friction_coef, 1],
+            [0, -friction_coef, -1],
+        ),
+        3: (
+            [friction_coef, 1, 0],
+            [friction_coef, -1, 0],
+            [friction_coef, 0, 1],
+            [friction_coef, 0, -1],
+        ),
+
+    }
+    # finger 0
+    A[6, :] = face_dict[contact_face_ids[0]][0] + [0] * 6
+    A[7, :] = face_dict[contact_face_ids[0]][1] + [0] * 6
+    A[8, :] = face_dict[contact_face_ids[0]][2] + [0] * 6
+    A[9, :] = face_dict[contact_face_ids[0]][3] + [0] * 6
+    # finger 1
+    A[10, :] = [0] * 3 + face_dict[contact_face_ids[1]][0] + [0] * 3
+    A[11, :] = [0] * 3 + face_dict[contact_face_ids[1]][1] + [0] * 3
+    A[12, :] = [0] * 3 + face_dict[contact_face_ids[1]][2] + [0] * 3
+    A[13, :] = [0] * 3 + face_dict[contact_face_ids[1]][3] + [0] * 3
+    # finger 2
+    A[14, :] = [0] * 6 + face_dict[contact_face_ids[2]][0]
+    A[15, :] = [0] * 6 + face_dict[contact_face_ids[2]][1]
+    A[16, :] = [0] * 6 + face_dict[contact_face_ids[2]][2]
+    A[17, :] = [0] * 6 + face_dict[contact_face_ids[2]][3]
 
     return A.T, lb
 
 
 def compute_objective_matrix(mass_matrix, desired_acc, acc_weight, reg_weight):
-    g = np.array([0., 0., 9.8, 0., 0., 0.])
+    g = np.array([0., 0., -9.81, 0., 0., 0.])
+    # g = np.array([0., 0., 0, 0., 0., 0.])
     Q = np.diag(acc_weight)
     R = np.ones(9) * reg_weight
 
     quad_term = mass_matrix.T.dot(Q).dot(mass_matrix) + R
-    linear_term = 1 * (g + desired_acc).T.dot(Q).dot(mass_matrix)
+    linear_term = 1 * (-g + desired_acc).T.dot(Q).dot(mass_matrix)
     return quad_term, linear_term
 
-def compute_contact_force(robot_info,
-                          desired_acc,
-                          contacts,
-                          acc_weight=ACC_WEIGHT,
-                          reg_weight=10,
-                          friction_coef=0.45,
-                          f_min_ratio=0.1,
-                          f_max_ratio=10.):
 
-    mass_matrix = compute_mass_matrix(
-        robot_info['body_mass'],
-        np.array(robot_info['body_inertia']).reshape((3, 3)),
-        robot_info['tip_position'])
+def compute_contact_force(robot_mass,
+                          robot_inertia,
+                          contact_face_ids,
+                          contact_position,
+                          desired_acc,
+                          acc_weight=ACC_WEIGHT,
+                          reg_weight=1e-6,
+                          friction_coef=0.8,
+                          f_min_ratio=-10,
+                          f_max_ratio=10):
+
+    mass_matrix = compute_mass_matrix(robot_mass, robot_inertia, contact_position)
     G, a = compute_objective_matrix(mass_matrix, desired_acc, acc_weight,
                                     reg_weight)
-    C, b = compute_constraint_matrix(robot_info['body_mass'], friction_coef, f_min_ratio, f_max_ratio)
+    C, b = compute_constraint_matrix(robot_mass, friction_coef, contact_face_ids,
+                                     f_min_ratio, f_max_ratio)
     G += 1e-4 * np.eye(9)
 
-    try:
-        result = quadprog.solve_qp(G, a, C, b)
-    except Exception as r:
-        print('wrong')
-        result = np.zeros((3, 3))
+    result = quadprog.solve_qp(G, a, C, b)
 
-    return -result[0].reshape((3, 3))*10
-
-# def compute_contact_force(robot,
-#                           desired_acc,
-#                           contacts,
-#                           acc_weight=ACC_WEIGHT,
-#                           reg_weight=1e-4,
-#                           friction_coef=0.45,
-#                           f_min_ratio=0.1,
-#                           f_max_ratio=10.):
-#     mass_matrix = compute_mass_matrix(
-#         robot.MPC_BODY_MASS,
-#         np.array(robot.MPC_BODY_INERTIA).reshape((3, 3)),
-#         robot.GetFootPositionsInBaseFrame())
-#     G, a = compute_objective_matrix(mass_matrix, desired_acc, acc_weight,
-#                                     reg_weight)
-#     C, b = compute_constraint_matrix(robot.MPC_BODY_MASS, contacts,
-#                                      friction_coef, f_min_ratio, f_max_ratio)
-#     G += 1e-4 * np.eye(12)
-#
-#     try:
-#         result = quadprog.solve_qp(G, a, C, b)
-#     except Exception as r:
-#         print("qp_torque_optimizer: ", r)
-#         result = np.load("data/safe_qp_torque_optimizer_result.npy", allow_pickle=True).tolist()
-#         return -result[0].reshape((4, 3))
-#
-#     return -result[0].reshape((4, 3))
+    return result[0].reshape((3, 3))

@@ -2,107 +2,45 @@ import time
 
 import gym
 import numpy as np
+import pybullet
 from trifinger_simulation import TriFingerPlatform, visual_objects
 from trifinger_simulation.tasks import move_cube_on_trajectory as task
-from three_wolves.deep_whole_body_controller.utility import pinocchio_utils, trajectory
+
 from three_wolves.envs.base_cube_env import ActionType, BaseCubeTrajectoryEnv
 from three_wolves.envs.utilities.env_utils import HistoryWrapper, resetCamera
 from three_wolves.deep_whole_body_controller.deep_wbc import DeepWBC
 from three_wolves.deep_whole_body_controller.base_joint_controller import Control_Phase
-
+from  three_wolves.deep_whole_body_controller.utility import trajectory
 
 class PhaseControlEnv(BaseCubeTrajectoryEnv):
-    def __init__(self,
-                 goal_trajectory,
-                 visualization,
-                 args,
-                 action_type=ActionType.TORQUE_AND_POSITION,
-                 robot_type='sim',
-                 history_num=3):
+    def __init__(self, goal_trajectory, visualization, history_num=3):
         super(PhaseControlEnv, self).__init__(
             goal_trajectory=goal_trajectory,
-            action_type=action_type,
-            step_size=100)
-
+            action_type=ActionType.TORQUE,
+            step_size=1)
         self.visualization = visualization
-        self.kinematics = pinocchio_utils.Kinematics(robot_type)
         self.observer = HistoryWrapper(history_num)
-        self.deep_wbc = DeepWBC(self.kinematics, self.observer, args)
+        self.deep_wbc = DeepWBC(self.observer, self.step_size)
         # create observation space
         _duplicate = lambda x: np.array([x] * history_num).flatten()
 
         spaces = TriFingerPlatform.spaces
-        if self.deep_wbc.get_control_mode() == Control_Phase.TORQUE:
-            self.observation_space = gym.spaces.Box(
-                low=np.hstack([
-                    _duplicate(spaces.robot_position.gym.low),  # joint position
-                    _duplicate(spaces.robot_velocity.gym.low),  # joint velocity
-                    _duplicate(spaces.robot_torque.gym.low),  # joint torque
-                    _duplicate([0] * 3),  # tip force
-
-                    _duplicate(spaces.object_position.gym.low),  # cube position
-                    _duplicate([-np.pi] * 3),  # cube orientation
-                    _duplicate(spaces.object_position.gym.low),  # goal position
-                    _duplicate([-0.3] * 3),  # cube to goal distance
-
-                    _duplicate(spaces.object_position.gym.low),  # tri-finger position 0
-                    _duplicate(spaces.object_position.gym.low),  # tri-finger position 1
-                    _duplicate(spaces.object_position.gym.low),  # tri-finger position 2
-                ]),
-                high=np.hstack([
-                    _duplicate(spaces.robot_position.gym.high),
-                    _duplicate(spaces.robot_velocity.gym.high),
-                    _duplicate(spaces.robot_torque.gym.high),
-                    _duplicate([1] * 3),
-
-                    _duplicate(spaces.object_position.gym.high),
-                    _duplicate([np.pi] * 3),
-                    _duplicate(spaces.object_position.gym.high),
-                    _duplicate([0.3] * 3),
-
-                    _duplicate(spaces.object_position.gym.high),
-                    _duplicate(spaces.object_position.gym.high),
-                    _duplicate(spaces.object_position.gym.high),
-                ])
-            )
-        elif self.deep_wbc.get_control_mode() == Control_Phase.POSITION:
-            self.observation_space = gym.spaces.Box(
-                low=np.hstack([
-                    _duplicate(spaces.robot_position.gym.low),  # joint position
-                    _duplicate(spaces.robot_velocity.gym.low),  # joint velocity
-                    _duplicate(spaces.robot_torque.gym.low),  # joint torque
-                    _duplicate([0] * 3),  # tip force
-
-                    _duplicate(spaces.object_position.gym.low),  # cube position
-                    _duplicate([-np.pi] * 3),  # cube orientation
-                    _duplicate(spaces.object_position.gym.low),  # goal position
-                    _duplicate([-0.3] * 3),  # cube to goal distance
-
-                    _duplicate(spaces.object_position.gym.low),  # tri-finger position 0
-                    _duplicate(spaces.object_position.gym.low),  # tri-finger position 1
-                    _duplicate(spaces.object_position.gym.low),  # tri-finger position 2
-                ]),
-                high=np.hstack([
-                    _duplicate(spaces.robot_position.gym.high),
-                    _duplicate(spaces.robot_velocity.gym.high),
-                    _duplicate(spaces.robot_torque.gym.high),
-                    _duplicate([1] * 3),
-
-                    _duplicate(spaces.object_position.gym.high),
-                    _duplicate([np.pi] * 3),
-                    _duplicate(spaces.object_position.gym.high),
-                    _duplicate([0.3] * 3),
-
-                    _duplicate(spaces.object_position.gym.high),
-                    _duplicate(spaces.object_position.gym.high),
-                    _duplicate(spaces.object_position.gym.high),
-                ])
-            )
-        else:
-            NotImplemented()
-
-        # action
-        # self.action_space = self.deep_wbc.torque_controller.robot_action_space
+        self.observation_space = gym.spaces.Box(
+            low=np.hstack([
+                spaces.object_position.gym.low,  # cube position
+                [-2*np.pi] * 3,                    # cube rpy
+                spaces.object_position.gym.low,  # goal position
+                [-0.3] * 3,                      # goal-cube difference
+                [0]                              # goal-cube distance
+            ]),
+            high=np.hstack([
+                spaces.object_position.gym.high,  # cube position
+                [2*np.pi] * 3,                      # cube rpy
+                spaces.object_position.gym.high,  # goal position
+                [0.3] * 3,                        # goal-cube difference
+                [1]                               # goal-cube distance
+            ])
+        )
         self.action_space = self.deep_wbc.get_action_space()
 
     def reset(self):
@@ -116,17 +54,29 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
             TriFingerPlatform.spaces.robot_position.default
         )
         # initialize cube at the centre
-        initial_object_pose = task.move_cube.Pose(
-            position=task.INITIAL_CUBE_POSITION
+        # initial_object_pose = task.move_cube.Pose(
+        #     position=task.INITIAL_CUBE_POSITION
+        # )
+        _random_obj_xy_pos = np.random.uniform(
+            low=[-0.06]*2,
+            high=[0.06]*2,
         )
-
+        _random_obj_yaw_ori = np.random.uniform(-2*np.pi, 2*np.pi)
+        # _random_obj_yaw_ori = np.pi
+        _random_obj_yaw_ori = pybullet.getQuaternionFromEuler([0, 0, _random_obj_yaw_ori])
+        random_object_pose = task.move_cube.Pose(
+            position=[_random_obj_xy_pos[0],
+                      _random_obj_xy_pos[1],
+                      task.INITIAL_CUBE_POSITION[2]],
+            orientation=_random_obj_yaw_ori
+        )
         self.platform = TriFingerPlatform(
             visualization=self.visualization,
             initial_robot_position=initial_robot_position,
-            initial_object_pose=initial_object_pose,
+            initial_object_pose=random_object_pose,
         )
 
-        self.deep_wbc.reset()
+        self.deep_wbc.reset(self.apply_action)
 
         # get goal trajectory
         if self.goal is None:
@@ -153,10 +103,7 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
         self.info["time_index"] += 1
         self.step_count += 1
         self.tip_force_offset = self.platform.get_robot_observation(0).tip_force
-        obs_dict = self._create_observation(0)
-        self.observer.reset(obs_dict)
-        obs = self.observer.update(obs_dict)
-        self.init_control()
+        obs, _ = self._create_observation(0)
         return obs
 
     def _create_observation(self, t):
@@ -167,45 +114,35 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
             task.get_active_goal(self.info["trajectory"], t)
         )
         cube_pos = object_observation.position
-        cube_orn = object_observation.orientation[:3]
+        cube_orn = pybullet.getEulerFromQuaternion(object_observation.orientation)
+        # cube_pos = self.platform.cube.get_state()[0]
+        # cube_orn = pybullet.getEulerFromQuaternion(self.platform.cube.get_state()[1])
         # compute finger positions
-        finger_pos = self.kinematics.forward_kinematics(robot_observation.position)
-        if self.deep_wbc.get_control_mode() == Control_Phase.TORQUE:
-            observation = {
-                "joint_position": robot_observation.position,  # joint position
-                "joint_velocity": robot_observation.velocity,  # joint velocity
-                "joint_torque": robot_observation.torque,  # joint torque
-                "tip_force": np.subtract(robot_observation.tip_force, self.tip_force_offset),  # tip force
+        finger_pos = self.deep_wbc.kinematics.forward_kinematics(robot_observation.position)
+        obs_dict = {
+            "joint_position": robot_observation.position,  # joint position
+            "joint_velocity": robot_observation.velocity,  # joint velocity
+            "joint_torque": robot_observation.torque,  # joint torque
+            "tip_force": np.subtract(robot_observation.tip_force, self.tip_force_offset),  # tip force
 
-                "object_position": cube_pos,  # cube position
-                "object_rpy": cube_orn,  # cube orientation
-                "goal_position": active_goal,  # goal position
-                "object_goal_distance": active_goal - cube_pos,  # cube to goal distance
+            "object_position": cube_pos,  # cube position
+            "object_rpy": cube_orn,  # cube orientation
+            "goal_position": active_goal,  # goal position
+            "object_goal_distance": active_goal - cube_pos,  # cube to goal distance
 
-                "tip_0_position": finger_pos[0],  # tri-finger position 0
-                "tip_1_position": finger_pos[1],  # tri-finger position 1
-                "tip_2_position": finger_pos[2],  # tri-finger position 2
-            }
-        elif self.deep_wbc.get_control_mode() == Control_Phase.POSITION:
-            observation = {
-                "joint_position": robot_observation.position,  # joint position
-                "joint_velocity": robot_observation.velocity,  # joint velocity
-                "joint_torque": robot_observation.torque,  # joint torque
-                "tip_force": np.subtract(robot_observation.tip_force, self.tip_force_offset),  # tip force
-
-                "object_position": cube_pos,  # cube position
-                "object_rpy": cube_orn,  # cube orientation
-                "goal_position": active_goal,  # goal position
-                "object_goal_distance": active_goal - cube_pos,  # cube to goal distance
-
-                "tip_0_position": finger_pos[0],  # tri-finger position 0
-                "tip_1_position": finger_pos[1],  # tri-finger position 1
-                "tip_2_position": finger_pos[2]  # tri-finger position 2
-            }
-        else:
-            raise NotImplemented()
-
-        return observation
+            "tip_0_position": finger_pos[0],  # tri-finger position 0
+            "tip_1_position": finger_pos[1],  # tri-finger position 1
+            "tip_2_position": finger_pos[2],  # tri-finger position 2
+        }
+        self.observer.update(obs_dict)
+        rl_obs = np.hstack([
+            cube_pos,  # cube position
+            cube_orn,  # cube rpy
+            active_goal,  # goal position
+            active_goal - cube_pos,  # goal-cube difference
+            np.linalg.norm(active_goal - cube_pos)  # goal-cube distance
+        ])
+        return rl_obs, obs_dict
 
     def _internal_step(self, action):
         self.step_count += 1
@@ -220,102 +157,64 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
             time.sleep(0.001)
         return t
 
-    def _apply_action(self, action):
-        if self.deep_wbc.get_control_mode() == Control_Phase.POSITION:
-            init_joint_pos = self.observer.dt['joint_position']
-            tar_joint_pos = action['position']
-            tg = trajectory.get_interpolation_planner(init_pos=init_joint_pos,
-                                                      tar_pos=tar_joint_pos,
-                                                      start_time=0,
-                                                      reach_time=self.step_size)
-            for i in range(self.step_size):
-                if self.step_count >= task.EPISODE_LENGTH:
-                    break
-                _action = tg(i + 1)
-                t = self._internal_step({'position': _action, 'torque': None})
-        elif self.deep_wbc.get_control_mode() == Control_Phase.TORQUE:
-            for _ in range(self.step_size):
-                if self.step_count >= task.EPISODE_LENGTH:
-                    break
-                t = self._internal_step(action)
-        # Use observations of step t + 1 to follow what would be expected
-        # in a typical gym environment.  Note that on the real robot, this
-        # will not be possible
-        self.info["time_index"] = t  # + 1
+    def apply_action(self, action):
+        # init_joint_pos = self.observer.dt['joint_position']
+        # tar_joint_pos = action['position']
+        # tg = trajectory.get_interpolation_planner(init_pos=init_joint_pos,
+        #                                           tar_pos=tar_joint_pos,
+        #                                           start_time=0,
+        #                                           reach_time=self.step_size)
+        # for i in range(self.step_size):
+        #     if self.step_count >= task.EPISODE_LENGTH:
+        #         break
+        #     _action = tg(i + 1)
+        #     t = self._internal_step(_action)
+        tg = trajectory.get_interpolation_planner(init_pos=self.observer.dt['joint_torque'],
+                                                  tar_pos=action,
+                                                  start_time=0,
+                                                  reach_time=self.step_size)
+        for i in range(self.step_size):
+            if self.step_count >= task.EPISODE_LENGTH:
+                break
+            _action = tg(i + 1)
+            t = self._internal_step(_action)
+            # Use observations of step t + 1 to follow what would be expected
+            # in a typical gym environment.  Note that on the real robot, this
+            # will not be possible
+            self.info["time_index"] = t  # + 1
 
-        obs_dict = self._create_observation(self.info["time_index"])
+        _, obs_dict = self._create_observation(self.info["time_index"])
 
         eval_score = self.compute_reward(
             obs_dict["object_position"],
             obs_dict["goal_position"],
             self.info,
         )
+        self.info['eval_score'] = eval_score
         return obs_dict, eval_score
 
     def step(self, policy_action):
-        self.deep_wbc.update()
-        cur_phase_action = self.deep_wbc.get_action(policy_action)
-
+        self.deep_wbc.step(policy_action)
+        # cur_phase_action = self.deep_wbc.get_action()
         # current action
-        obs_dict, eval_score = self._apply_action(cur_phase_action)
-        self.info['eval_score'] = eval_score
+        # obs_dict, eval_score = self.apply_action(cur_phase_action)
+        # self.info['eval_score'] = eval_score
 
-        self.observer.update(obs_dict)
         reward = self.deep_wbc.get_reward()
         max_episode = self.step_count >= task.EPISODE_LENGTH
         done = self.deep_wbc.get_done() or max_episode
 
-        return self.observer.get_history_obs(), reward, done, self.info
+        return self._create_observation(self.info["time_index"])[0], reward, done, self.info
 
     def render(self, mode='human'):
         pass
 
-    def init_control(self, total_time=0.2):
-        # todo: collision avoidance
-        # move tri-finger to init spot
-        total_step = int(total_time / (0.001 * self.step_size))
-        key_pos_to_obj = (
-            ((0.12, 0.0, 0.06), (0, -0.12, 0.06), (-0.12, 0, 0.06)),
-            ((0.03, 0.0, 0.0), (0, -0.03, 0.0), (-0.03, 0, 0.0))
-        )
-        for key_pos in key_pos_to_obj:
-            self._to_obj_point(key_pos, int(total_step/len(key_pos_to_obj)))
-
-    def _to_obj_point(self, tar_pos_to_obj, num_step):
-        init_tip_pos = np.hstack([self.observer.dt[f'tip_{i}_position'] for i in range(3)])
-        cube_pos = self.observer.dt['object_position']
-        tar_tip_pos = np.hstack([
-            np.add(cube_pos, tar_pos_to_obj[0]),  # arm_0 x+y+
-            np.add(cube_pos, tar_pos_to_obj[1]),  # arm_1 x+y-
-            np.add(cube_pos, tar_pos_to_obj[2])   # arm_2 x-y+
-        ])
-        tg = trajectory.get_path_planner(init_pos=init_tip_pos,
-                                         tar_pos=tar_tip_pos,
-                                         start_time=0,
-                                         reach_time=num_step)
-        for t in range(num_step):
-            tar_tip_pos = tg(t + 1)
-            arm_joi_pos = self.observer.dt['joint_position']
-            to_goal_joints, _error = self.kinematics.inverse_kinematics(tar_tip_pos.reshape(3, 3),
-                                                                        arm_joi_pos)
-            obs_dict, eval_score = self._apply_action({
-                'position': to_goal_joints,
-                'torque': None
-            })
-            self.observer.update(obs_dict)
-        self.info["time_index"] = t*100
-
-
 class RealPhaseControlEnv(PhaseControlEnv):
     def __init__(self,
                  goal_trajectory,
-                 args,
-                 action_type=ActionType.POSITION):
+                 action_type=ActionType.TORQUE):
         super().__init__(goal_trajectory=goal_trajectory,
-                         visualization=False,
-                         args=args,
-                         action_type=action_type,
-                         robot_type='real')
+                         visualization=False)
 
     def _internal_step(self, action_dict):
         self.step_count += 1
@@ -333,18 +232,12 @@ class RealPhaseControlEnv(PhaseControlEnv):
                 "Given action is not contained in the action space."
             )
 
-        self.deep_wbc.update()
-        cur_phase_action = self.deep_wbc.get_action(policy_action)
-
-        # current action
-        obs_dict, eval_score = self._apply_action(cur_phase_action)
-
-        self.observer.update(obs_dict)
-        # reward = self.deep_wbc.get_reward()
+        self.deep_wbc.step(policy_action)
+        reward = self.deep_wbc.get_reward()
         max_episode = self.step_count >= task.EPISODE_LENGTH
-        done = max_episode  # or self.deep_wbc.get_done()
+        done = max_episode
 
-        return self.observer.get_history_obs(), eval_score, done, self.info
+        return self._create_observation(self.info["time_index"])[0], reward, done, self.info
 
     def reset(self):
         import robot_fingers
@@ -356,7 +249,7 @@ class RealPhaseControlEnv(PhaseControlEnv):
 
         self.platform = robot_fingers.TriFingerPlatformWithObjectFrontend()
 
-        self.deep_wbc.reset()
+        self.deep_wbc.reset(self.apply_action)
 
         # get goal trajectory
         if self.goal is None:
@@ -373,26 +266,26 @@ class RealPhaseControlEnv(PhaseControlEnv):
         self.info["time_index"] += 1
         self.step_count += 1
         self.tip_force_offset = self.platform.get_robot_observation(0).tip_force
-        obs_dict = self._create_observation(0)
-        self.observer.reset(obs_dict)
-        obs = self.observer.update(obs_dict)
-        self.init_control(total_time=1)
+        obs, _ = self._create_observation(0)
         return obs
 
 
 if __name__ == '__main__':
     class A(object):
-        model_name = 'tg'
+        model_name = 'force'
 
     env = PhaseControlEnv(goal_trajectory=None,
-                          visualization=True,
-                          args=A())
+                          visualization=True)
 
     observation = env.reset()
-    z = 0
     is_done = False
-    while True:
-        observation, r, is_done, info = env.step(np.random.uniform(env.action_space.low,
-                                                                   env.action_space.high) * 0)
-        z = info["time_index"]
-        print("reward:", r)
+    t = 0
+    while t < task.EPISODE_LENGTH:
+        observation, r, is_done, info = env.step([2.2/4, 0.7/4, 3.5/4,
+                                                  0.5, 0.5, 0.5])
+        _score = info["eval_score"]
+        if t % 1 == 0:
+            print("reward:", _score)
+        t += 0.001*env.step_size
+        if is_done:
+            env.reset()

@@ -4,9 +4,9 @@
 "tip_force": robot_observation.tip_force,       # tip force
 
 "object_position": cube_pos,       # cube position
-# "object_pos_rate":
+"object_pos_rate":
 "object_rpy": cube_orn,  # cube orientation
-# "object_rpy_rate":
+"object_rpy_rate":
 
 "goal_position": active_goal,     # goal position
 "object_goal_distance": active_goal - cube_pos,  # cube to goal distance

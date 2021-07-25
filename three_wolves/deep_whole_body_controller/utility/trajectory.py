@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def Rotate(_rpy, xyz):
     xyz = np.matrix(xyz).T
     Rx = np.matrix([[1, 0, 0],
@@ -15,6 +16,14 @@ def Rotate(_rpy, xyz):
                     [0, 0, 1]])
     R = Rx * Ry * Rz
     return np.array(R * xyz).flatten()
+
+def Rotate_yaw(_rpy, xyz):
+    xyz = np.matrix(xyz).T
+    Rz = np.matrix([[np.cos(_rpy[2]), -np.sin(_rpy[2]), 0],
+                    [np.sin(_rpy[2]), np.cos(_rpy[2]), 0],
+                    [0, 0, 1]])
+    return np.array(Rz * xyz).flatten()
+
 
 def _gen_parabola(phase: float, start: float, mid: float, end: float) -> float:
     """Gets a point on a parabola y = a x^2 + b x + c.
@@ -41,30 +50,33 @@ def _gen_parabola(phase: float, start: float, mid: float, end: float) -> float:
 
     return coef_a * phase ** 2 + coef_b * phase + coef_c
 
+
 def compute_third_polynomial_trajectory(t, T):
     assert T > 0
     a0 = 0
     a1 = 0
-    a2 = 3 / T**2
-    a3 = - 2 / T**3
-    s = a0 + a1*t + a2*t**2 + a3*t**3
-    v = a1 + 2*a2*t + 3*a3*t**2
-    a = 2*a2 + 6*a3*t
+    a2 = 3 / T ** 2
+    a3 = - 2 / T ** 3
+    s = a0 + a1 * t + a2 * t ** 2 + a3 * t ** 3
+    v = a1 + 2 * a2 * t + 3 * a3 * t ** 2
+    a = 2 * a2 + 6 * a3 * t
     return s, v, a
 
-def compute_fifth_polynomial_s_trajectory(t, T):
+
+def compute_fifth_polynomial_trajectory(t, T):
     assert T > 0
     # a0 = 0
     # a1 = 0
     # a2 = 0
-    a3 = 10 / T**3
-    a4 = - 15 / T**4
-    a5 = 6 / T**5
+    a3 = 10 / (T ** 3)
+    a4 = - 15 / (T ** 4)
+    a5 = 6 / (T ** 5)
 
-    s = a3*t**3 + a4*t**4 + a5*t**5
-    v = 3*a3*t**2 + 4*a4*t**3 + 5*a5*t**4
-    a = 6*a3*t + 12*a4*t**2 + 20*a5*t**3
+    s = a3 * (t ** 3) + a4 * (t ** 4) + a5 * (t ** 5)
+    v = 3 * a3 * (t ** 2) + 4 * a4 * (t ** 3) + 5 * a5 * (t ** 4)
+    a = 6 * a3 * t + 12 * a4 * (t ** 2) + 20 * a5 * (t ** 3)
     return s, v, a
+
 
 def get_path_planner(init_pos, tar_pos, start_time, reach_time):
     dist = tar_pos - init_pos
@@ -73,22 +85,12 @@ def get_path_planner(init_pos, tar_pos, start_time, reach_time):
         t = cur_time - start_time
         T = reach_time - start_time
         if t <= T:
-            return init_pos + compute_third_polynomial_trajectory(t, T)[0] * dist
+            return init_pos + compute_fifth_polynomial_trajectory(t, T)[0] * dist
         else:
             return tar_pos
+
     return tg
 
-def get_fifth_path_planner(init_pos, tar_pos, start_time, reach_time):
-    dist = tar_pos - init_pos
-
-    def tg(cur_time):
-        t = cur_time - start_time
-        T = reach_time - start_time
-        if t <= T:
-            return init_pos + compute_fifth_polynomial_s_trajectory(t, T)[0] * dist
-        else:
-            return tar_pos
-    return tg
 
 def get_acc_planner(init_pos, tar_pos, start_time, reach_time):
     dist = tar_pos - init_pos
@@ -97,14 +99,16 @@ def get_acc_planner(init_pos, tar_pos, start_time, reach_time):
         t = cur_time - start_time
         T = reach_time - start_time
         if t <= T:
-            s, t_v, t_a = compute_fifth_polynomial_s_trajectory(t, T)
+            s, t_v, t_a = compute_fifth_polynomial_trajectory(t, T)
             t_s = init_pos + s * dist
             t_v *= dist
             t_a *= dist
             return [t_s, t_v, t_a]
         else:
             return [tar_pos, np.zeros(3), np.zeros(3)]
+
     return tg
+
 
 def get_interpolation_planner(init_pos, tar_pos, start_time, reach_time):
     interpolation = (tar_pos - init_pos) / (reach_time - start_time)
@@ -116,19 +120,20 @@ def get_interpolation_planner(init_pos, tar_pos, start_time, reach_time):
             return init_pos + t * interpolation
         else:
             return tar_pos
+
     return tg
 
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import numpy as np
-    T = [0, 3, 5]
 
-    path = get_acc_planner(np.array([0, 0, 0]), np.array([4, -2, 1]), T[0], T[1])
-    q = np.array([path(t) for t in range(T[0], T[2])])
+    path = get_acc_planner(np.array([0, 0, 0]), np.array([30, -10, 20]), 20, 50)
+    q = np.array([path(t) for t in range(20, 80)])
     for i in range(3):
         plt.title(['displacement', 'velocity', 'acceleration'][i])
-        plt.plot(range(T[0], T[2]), q[:, i, 0])
-        plt.plot(range(T[0], T[2]), q[:, i, 1])
-        plt.plot(range(T[0], T[2]), q[:, i, 2])
+        # plt.plot(range(20, 80), q[:, i])
+        plt.plot(range(20, 80), q[:, i, 0])
+        plt.plot(range(20, 80), q[:, i, 1])
+        plt.plot(range(20, 80), q[:, i, 2])
         plt.show()
