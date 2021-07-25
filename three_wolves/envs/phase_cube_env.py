@@ -16,8 +16,8 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
     def __init__(self, goal_trajectory, visualization, history_num=3, robot_type='sim'):
         super(PhaseControlEnv, self).__init__(
             goal_trajectory=goal_trajectory,
-            action_type=ActionType.TORQUE,
-            step_size=1)
+            action_type=ActionType.POSITION,
+            step_size=5)
         self.visualization = visualization
         self.observer = HistoryWrapper(history_num)
         self.deep_wbc = DeepWBC(self.observer, self.step_size, robot_type)
@@ -159,7 +159,7 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
 
     def apply_action(self, action):
         # init_joint_pos = self.observer.dt['joint_position']
-        # tar_joint_pos = action['position']
+        # tar_joint_pos = action
         # tg = trajectory.get_interpolation_planner(init_pos=init_joint_pos,
         #                                           tar_pos=tar_joint_pos,
         #                                           start_time=0,
@@ -169,7 +169,7 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
         #         break
         #     _action = tg(i + 1)
         #     t = self._internal_step(_action)
-        tg = trajectory.get_interpolation_planner(init_pos=self.observer.dt['joint_torque'],
+        tg = trajectory.get_interpolation_planner(init_pos=self.observer.dt['joint_position'],      # joint_torque
                                                   tar_pos=action,
                                                   start_time=0,
                                                   reach_time=self.step_size)
@@ -268,7 +268,6 @@ class RealPhaseControlEnv(PhaseControlEnv):
         self.tip_force_offset = self.platform.get_robot_observation(0).tip_force
         obs, _ = self._create_observation(0)
         return obs
-
 
 if __name__ == '__main__':
     class A(object):

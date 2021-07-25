@@ -54,7 +54,7 @@ class DeepWBC:
         return self.reward
 
     def get_done(self):
-        return self.drop_times >= 2
+        return self.drop_times >= 3
 
     def Dropped(self):
         tip_force = self.observer.dt['tip_force']
