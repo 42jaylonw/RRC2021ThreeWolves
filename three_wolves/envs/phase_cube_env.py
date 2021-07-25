@@ -190,6 +190,7 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
             obs_dict["goal_position"],
             self.info,
         )
+        print(self.info['time_index'], ': ', eval_score)
         self.info['eval_score'] = eval_score
         return obs_dict, eval_score
 
