@@ -217,7 +217,7 @@ class RealContactControlEnv(ContactControlEnv):
         super().__init__(goal_trajectory=goal_trajectory,
                          visualization=False,
                          robot_type='real')
-        self.max_episode = goal_trajectory[-1][0]
+        self.max_episode = task.EPISODE_LENGTH
 
     def _internal_step(self, action):
         self.step_count += 1
@@ -244,8 +244,7 @@ class RealContactControlEnv(ContactControlEnv):
             cur_phase_action = self.position_controller.get_action()
             self.apply_action(cur_phase_action)
             # reward += self.position_controller.get_reward() * 0.001 * self.step_size
-
-        self.drop_times += 1
+        # self.drop_times += 1
         done = self.step_count >= self.max_episode
 
         return self._create_observation(self.info["time_index"])[0], reward, done, self.info
