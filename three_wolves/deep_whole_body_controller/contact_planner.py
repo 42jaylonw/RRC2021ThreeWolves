@@ -6,7 +6,7 @@ class CubeContactMap:
     # only for square: length==width==height
     # four faces: 0 1 2 3
     # default face 0: (0, -w)
-    def __init__(self, width, center=0.4):
+    def __init__(self, width, center=0.6):
         self.width = width
         self.center_offset = width * (1 - center) / 2
 
@@ -59,8 +59,6 @@ class CubeContactMap:
             plt.title(f'Face {cube_id}')
             plt.grid()
         plt.tight_layout()
-        # plt.show()
-
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         ax.voxels(np.ones(axes), facecolors=[0, 0.5, 0.5, 0.6])
@@ -75,12 +73,12 @@ class CubeContactMap:
 
 class ContactPlanner:
     def __init__(self, cube_width=0.065):
-        self.contact_map = CubeContactMap(cube_width, center=0.5)
-        # action: X0 X1 X2 Y0 Y1 Y2
-        # todo: let finger decide more area and rule limit not in same face
-        tip_0_x_bound = [0.25, 0.74]  # face 1, 2
-        tip_1_x_bound = [0.00, 0.49]  # face 0, 1
-        tip_2_x_bound = [0.75, 0.99]  # face 3
+        self.contact_map = CubeContactMap(cube_width)
+
+        tip_0_x_bound = [0.25, 0.74]  # tip 0: face 1, 2
+        tip_1_x_bound = [0.00, 0.49]  # tip 1: face 0, 1
+        tip_2_x_bound = [0.75, 0.99]  # tip 2: face 3
+
         tips_y_bound = [0.00, 0.99]
 
         self.action_space = gym.spaces.Box(
@@ -99,11 +97,10 @@ class ContactPlanner:
         )
 
     def compute_contact_points(self, action):
-        # todo: maybe make action[4] decide change contact position or not
         contact_ids = []
         contact_points = []
         for i in range(3):
-            flat_point = self.contact_map.get_flat_from_scale([action[i], action[3+i]])
+            flat_point = self.contact_map.get_flat_from_scale([action[i] % 1.0, action[3+i]])   # for 1. > x point
             contact_id, pos = self.contact_map.convert_to_cube_space(flat_point[0], flat_point[1])
             contact_ids.append(contact_id)
             contact_points.append(pos)
@@ -112,12 +109,6 @@ class ContactPlanner:
 
 if __name__ == '__main__':
     ccs = CubeContactMap(10, center=0.6)
-    # point_list = [
-    #     (0, 0),
-    #     (3, 0.5),
-    #     (12, 0),
-    #     (19, 1.5)
-    # ]
     scale_list = np.array([
         (0.5, 0.99),
         (0, 0.1),

@@ -8,40 +8,45 @@ from trifinger_simulation.tasks import move_cube_on_trajectory as task
 
 from three_wolves.envs.base_cube_env import ActionType, BaseCubeTrajectoryEnv
 from three_wolves.envs.utilities.env_utils import HistoryWrapper, resetCamera
-from three_wolves.deep_whole_body_controller.deep_wbc import DeepWBC
-from three_wolves.deep_whole_body_controller.base_joint_controller import Control_Phase
-from  three_wolves.deep_whole_body_controller.utility import trajectory
+from three_wolves.deep_whole_body_controller import position_controller, contact_planner
+from three_wolves.deep_whole_body_controller.utility import pinocchio_utils, reward_utils, trajectory
 
-class PhaseControlEnv(BaseCubeTrajectoryEnv):
-    def __init__(self, goal_trajectory, visualization, history_num=3, robot_type='sim'):
-        super(PhaseControlEnv, self).__init__(
+
+class ContactControlEnv(BaseCubeTrajectoryEnv):
+    def render(self, mode='human'):
+        pass
+
+    def __init__(self, goal_trajectory, visualization, history_num=1, robot_type='sim'):
+        super(ContactControlEnv, self).__init__(
             goal_trajectory=goal_trajectory,
             action_type=ActionType.POSITION,
             step_size=5)
         self.visualization = visualization
         self.observer = HistoryWrapper(history_num)
-        self.deep_wbc = DeepWBC(self.observer, self.step_size, robot_type)
+        self.kinematics = pinocchio_utils.Kinematics(robot_type)
+        self.contact_planner = contact_planner.ContactPlanner()
+        self.position_controller = position_controller.PositionController(self.kinematics,
+                                                                          self.observer, self.step_size)
+        self.max_episode = task.EPISODE_LENGTH
         # create observation space
-        _duplicate = lambda x: np.array([x] * history_num).flatten()
-
         spaces = TriFingerPlatform.spaces
         self.observation_space = gym.spaces.Box(
             low=np.hstack([
                 spaces.object_position.gym.low,  # cube position
-                [-2*np.pi] * 3,                    # cube rpy
+                [-2 * np.pi] * 3,  # cube rpy
                 spaces.object_position.gym.low,  # goal position
-                [-0.3] * 3,                      # goal-cube difference
-                [0]                              # goal-cube distance
+                [-0.3] * 3,  # goal-cube difference
+                [0]  # goal-cube distance
             ]),
             high=np.hstack([
                 spaces.object_position.gym.high,  # cube position
-                [2*np.pi] * 3,                      # cube rpy
+                [2 * np.pi] * 3,  # cube rpy
                 spaces.object_position.gym.high,  # goal position
-                [0.3] * 3,                        # goal-cube difference
-                [1]                               # goal-cube distance
+                [0.3] * 3,  # goal-cube difference
+                [1]  # goal-cube distance
             ])
         )
-        self.action_space = self.deep_wbc.get_action_space()
+        self.action_space = self.contact_planner.action_space
 
     def reset(self):
         """Reset the environment."""
@@ -54,15 +59,11 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
             TriFingerPlatform.spaces.robot_position.default
         )
         # initialize cube at the centre
-        # initial_object_pose = task.move_cube.Pose(
-        #     position=task.INITIAL_CUBE_POSITION
-        # )
         _random_obj_xy_pos = np.random.uniform(
-            low=[-0.06]*2,
-            high=[0.06]*2,
+            low=[-0.06] * 2,
+            high=[0.06] * 2,
         )
-        _random_obj_yaw_ori = np.random.uniform(-2*np.pi, 2*np.pi)
-        # _random_obj_yaw_ori = np.pi
+        _random_obj_yaw_ori = np.random.uniform(-2 * np.pi, 2 * np.pi)
         _random_obj_yaw_ori = pybullet.getQuaternionFromEuler([0, 0, _random_obj_yaw_ori])
         random_object_pose = task.move_cube.Pose(
             position=[_random_obj_xy_pos[0],
@@ -75,8 +76,6 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
             initial_robot_position=initial_robot_position,
             initial_object_pose=random_object_pose,
         )
-
-        self.deep_wbc.reset(self.apply_action)
 
         # get goal trajectory
         if self.goal is None:
@@ -94,12 +93,13 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
             )
             resetCamera()
 
-        self.info = {"time_index": -1, "trajectory": trajectory}
+        self.info = {"time_index": -1, "trajectory": trajectory, "eval_score": 0}
         self.step_count = 0
+        self.drop_times = 0
 
         # initial step
         robot_action = self._gym_action_to_robot_action(self._initial_action)
-        t = self.platform.append_desired_action(robot_action)
+        self.platform.append_desired_action(robot_action)
         self.info["time_index"] += 1
         self.step_count += 1
         self.tip_force_offset = self.platform.get_robot_observation(0).tip_force
@@ -115,10 +115,7 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
         )
         cube_pos = object_observation.position
         cube_orn = pybullet.getEulerFromQuaternion(object_observation.orientation)
-        # cube_pos = self.platform.cube.get_state()[0]
-        # cube_orn = pybullet.getEulerFromQuaternion(self.platform.cube.get_state()[1])
-        # compute finger positions
-        finger_pos = self.deep_wbc.kinematics.forward_kinematics(robot_observation.position)
+        finger_pos = self.kinematics.forward_kinematics(robot_observation.position)
         obs_dict = {
             "joint_position": robot_observation.position,  # joint position
             "joint_velocity": robot_observation.velocity,  # joint velocity
@@ -158,64 +155,69 @@ class PhaseControlEnv(BaseCubeTrajectoryEnv):
         return t
 
     def apply_action(self, action):
-        # init_joint_pos = self.observer.dt['joint_position']
-        # tar_joint_pos = action
-        # tg = trajectory.get_interpolation_planner(init_pos=init_joint_pos,
-        #                                           tar_pos=tar_joint_pos,
-        #                                           start_time=0,
-        #                                           reach_time=self.step_size)
-        # for i in range(self.step_size):
-        #     if self.step_count >= task.EPISODE_LENGTH:
-        #         break
-        #     _action = tg(i + 1)
-        #     t = self._internal_step(_action)
-        tg = trajectory.get_interpolation_planner(init_pos=self.observer.dt['joint_position'],      # joint_torque
+        tg = trajectory.get_interpolation_planner(init_pos=self.observer.dt['joint_position'],
                                                   tar_pos=action,
                                                   start_time=0,
                                                   reach_time=self.step_size)
         for i in range(self.step_size):
-            if self.step_count >= task.EPISODE_LENGTH:
+            if self.step_count >= self.max_episode:
                 break
             _action = tg(i + 1)
             t = self._internal_step(_action)
-            # Use observations of step t + 1 to follow what would be expected
-            # in a typical gym environment.  Note that on the real robot, this
-            # will not be possible
-            self.info["time_index"] = t  # + 1
+            self.info["time_index"] = t
+            _, obs_dict = self._create_observation(self.info["time_index"])
 
-        _, obs_dict = self._create_observation(self.info["time_index"])
+            # todo: delete me at real stage
+            # eval_score = self.compute_reward(
+            #     obs_dict["object_position"],
+            #     obs_dict["goal_position"],
+            #     self.info,
+            # )
+            # self.info['eval_score'] += eval_score
 
-        eval_score = self.compute_reward(
-            obs_dict["object_position"],
-            obs_dict["goal_position"],
-            self.info,
-        )
-        # print(self.info['time_index'], ': ', eval_score)
-        self.info['eval_score'] = eval_score
-        return obs_dict, eval_score
+        # return score
+
+    def update(self, policy_action):
+        self._last_goal = self.observer.dt['goal_position']
+        contact_face_ids, contact_points = self.contact_planner.compute_contact_points(policy_action)
+        self.position_controller.update(contact_points, contact_face_ids)
 
     def step(self, policy_action):
-        self.deep_wbc.step(policy_action)
-        # cur_phase_action = self.deep_wbc.get_action()
-        # current action
-        # obs_dict, eval_score = self.apply_action(cur_phase_action)
-        # self.info['eval_score'] = eval_score
+        self.update(policy_action)
+        self.position_controller.tips_reach(self.apply_action)
+        reward = 0
+        while not self.Dropped() and not self.step_count >= self.max_episode:
+            if list(self._last_goal) != list(self.observer.dt['goal_position']):
+                self.update(policy_action)
+            cur_phase_action = self.position_controller.get_action()
+            self.apply_action(cur_phase_action)
+            reward += self.position_controller.get_reward() * 0.001 * self.step_size
 
-        reward = self.deep_wbc.get_reward()
-        max_episode = self.step_count >= task.EPISODE_LENGTH
-        done = self.deep_wbc.get_done() or max_episode
+        self.drop_times += 1
+        done = self.drop_times >= 3 or self.step_count >= self.max_episode
+
+        # todo: delete me
+        # done = self.step_count >= self.max_episode
 
         return self._create_observation(self.info["time_index"])[0], reward, done, self.info
 
-    def render(self, mode='human'):
-        pass
+    def Dropped(self):
+        tip_force = self.observer.dt['tip_force']
+        cube_pos = np.array(self.observer.dt['object_position'])
+        tri_distance = [reward_utils.ComputeDist(self.observer.dt['tip_0_position'], cube_pos),
+                        reward_utils.ComputeDist(self.observer.dt['tip_1_position'], cube_pos),
+                        reward_utils.ComputeDist(self.observer.dt['tip_2_position'], cube_pos)]
+        is_dropped = list(tip_force).count(0.) > 1 or any(np.array(tri_distance) > 0.7)
+        return is_dropped
 
-class RealPhaseControlEnv(PhaseControlEnv):
+
+class RealContactControlEnv(ContactControlEnv):
     def __init__(self,
                  goal_trajectory):
         super().__init__(goal_trajectory=goal_trajectory,
                          visualization=False,
                          robot_type='real')
+        self.max_episode = goal_trajectory['goal'][-1][0]
 
     def _internal_step(self, action):
         self.step_count += 1
@@ -233,10 +235,18 @@ class RealPhaseControlEnv(PhaseControlEnv):
                 "Given action is not contained in the action space."
             )
 
-        self.deep_wbc.step(policy_action)
-        reward = self.deep_wbc.get_reward()
-        max_episode = self.step_count >= task.EPISODE_LENGTH
-        done = max_episode
+        self.update(policy_action)
+        self.position_controller.tips_reach(self.apply_action)
+        reward = 0
+        while not self.Dropped() and not self.step_count >= self.max_episode:
+            if list(self._last_goal) != list(self.observer.dt['goal_position']):
+                self.update(policy_action)
+            cur_phase_action = self.position_controller.get_action()
+            self.apply_action(cur_phase_action)
+            # reward += self.position_controller.get_reward() * 0.001 * self.step_size
+
+        self.drop_times += 1
+        done = self.step_count >= self.max_episode
 
         return self._create_observation(self.info["time_index"])[0], reward, done, self.info
 
@@ -250,8 +260,6 @@ class RealPhaseControlEnv(PhaseControlEnv):
 
         self.platform = robot_fingers.TriFingerPlatformWithObjectFrontend()
 
-        self.deep_wbc.reset(self.apply_action)
-
         # get goal trajectory
         if self.goal is None:
             trajectory = task.sample_goal()
@@ -263,29 +271,25 @@ class RealPhaseControlEnv(PhaseControlEnv):
 
         # initial step
         robot_action = self._gym_action_to_robot_action(self._initial_action)
-        t = self.platform.append_desired_action(robot_action)
+        self.platform.append_desired_action(robot_action)
         self.info["time_index"] += 1
         self.step_count += 1
         self.tip_force_offset = self.platform.get_robot_observation(0).tip_force
         obs, _ = self._create_observation(0)
         return obs
 
-if __name__ == '__main__':
-    class A(object):
-        model_name = 'force'
 
-    env = PhaseControlEnv(goal_trajectory=None,
-                          visualization=True)
+if __name__ == '__main__':
+    env = ContactControlEnv(goal_trajectory=None,
+                            visualization=True)
 
     observation = env.reset()
     is_done = False
     t = 0
-    while t < task.EPISODE_LENGTH:
-        observation, r, is_done, info = env.step([2.2/4, 0.7/4, 3.5/4,
-                                                  0.5, 0.5, 0.5])
-        _score = info["eval_score"]
-        if t % 1 == 0:
-            print("reward:", _score)
-        t += 0.001*env.step_size
+    while t < env.max_episode:
+        observation, score, is_done, info = env.step([0.5 + 0.25 / 2, 0.25 / 2, 0.75 + 0.2 / 2,
+                                                      0.5, 0.5, 0.5])
+        print("eval_score:", score)
+        t += 0.001 * env.step_size
         if is_done:
             env.reset()
