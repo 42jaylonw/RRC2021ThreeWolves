@@ -217,7 +217,7 @@ class RealContactControlEnv(ContactControlEnv):
         super().__init__(goal_trajectory=goal_trajectory,
                          visualization=False,
                          robot_type='real')
-        self.max_episode = goal_trajectory['goal'][-1][0]
+        self.max_episode = goal_trajectory[-1][0]
 
     def _internal_step(self, action):
         self.step_count += 1
