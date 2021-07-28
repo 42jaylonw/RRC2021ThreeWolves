@@ -18,6 +18,7 @@ class PositionController:
         self.desired_contact_points = None
         self.contact_face_ids = None
         self.desired_speed = 0.1
+        self.reach_time = 4.0
 
     def reset(self):
         pass
@@ -54,19 +55,18 @@ class PositionController:
 
         return beta
 
-    def tips_reach(self, apply_action, total_time=2.0):
+    def tips_reach(self, apply_action):
         s = 2
         pre_finger_scale = np.array([[1, s, 1],
                                      [s, 1, 1],
                                      [1, s, 1],
                                      [s, 1, 1]])[self.contact_face_ids]
-        P0 = np.array([list(self.observer.dt[f'tip_{i}_position'][:2]) + [0.08] for i in range(3)])
-        P1 = self.desired_contact_points * pre_finger_scale + [0, 0, 0.05]
-        P2 = self.desired_contact_points * pre_finger_scale
-        P3 = self.desired_contact_points
+        P0 = self.desired_contact_points * pre_finger_scale + [0, 0, 0.05]
+        P1 = self.desired_contact_points * pre_finger_scale
+        P2 = self.desired_contact_points
 
-        key_points = [P0, P1, P2, P3]
-        key_interval = np.array([0.3, 0.2, 0.2, 0.3])*total_time
+        key_points = [P0, P1, P2]
+        key_interval = np.array([0.3, 0.2, 0.5])*self.reach_time
         for points, interval in zip(key_points, key_interval):
             _clip_yaw = self._get_clip_yaw()
             rotated_key_pos = np.array([trajectory.Rotate([0, 0, _clip_yaw], points[i]) for i in range(3)])
@@ -78,7 +78,7 @@ class PositionController:
         tg = trajectory.get_path_planner(init_pos=init_tip_pos,
                                          tar_pos=tar_tip_pos.flatten(),
                                          start_time=0,
-                                         reach_time=total_time * 0.8)
+                                         reach_time=total_time)
         t = 0
         while t < total_time:
             tg_tip_pos = tg(t)

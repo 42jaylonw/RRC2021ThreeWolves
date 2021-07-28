@@ -16,12 +16,14 @@ class ContactControlEnv(BaseCubeTrajectoryEnv):
     def render(self, mode='human'):
         pass
 
-    def __init__(self, goal_trajectory, visualization, history_num=1, robot_type='sim'):
+    def __init__(self, goal_trajectory, visualization, randomization, evaluation=False, history_num=1, robot_type='sim'):
         super(ContactControlEnv, self).__init__(
             goal_trajectory=goal_trajectory,
             action_type=ActionType.POSITION,
             step_size=5)
         self.visualization = visualization
+        self.randomization = randomization
+        self.evaluation = evaluation
         self.observer = HistoryWrapper(history_num)
         self.kinematics = pinocchio_utils.Kinematics(robot_type)
         self.contact_planner = contact_planner.ContactPlanner()
@@ -76,6 +78,14 @@ class ContactControlEnv(BaseCubeTrajectoryEnv):
             initial_robot_position=initial_robot_position,
             initial_object_pose=random_object_pose,
         )
+
+        if self.randomization:
+            cube_id = self.platform.cube._object_id
+            random_mass = 0.094*np.random.uniform(0.9, 1.1)
+            random_lateral_friction = 1*np.random.uniform(0.9, 1)
+            random_step_size = np.random.randint(1, 6)
+            pybullet.changeDynamics(cube_id, -1, mass=random_mass, lateralFriction=random_lateral_friction)
+            self.step_size = random_step_size
 
         # get goal trajectory
         if self.goal is None:
@@ -167,13 +177,13 @@ class ContactControlEnv(BaseCubeTrajectoryEnv):
             self.info["time_index"] = t
             _, obs_dict = self._create_observation(self.info["time_index"])
 
-            # todo: delete me at real stage
-            # eval_score = self.compute_reward(
-            #     obs_dict["object_position"],
-            #     obs_dict["goal_position"],
-            #     self.info,
-            # )
-            # self.info['eval_score'] += eval_score
+            if self.evaluation:
+                eval_score = self.compute_reward(
+                    obs_dict["object_position"],
+                    obs_dict["goal_position"],
+                    self.info,
+                )
+                self.info['eval_score'] += eval_score
 
         # return score
 
@@ -196,8 +206,8 @@ class ContactControlEnv(BaseCubeTrajectoryEnv):
         self.drop_times += 1
         done = self.drop_times >= 3 or self.step_count >= self.max_episode
 
-        # todo: delete me
-        # done = self.step_count >= self.max_episode
+        if self.evaluation:
+            done = self.step_count >= self.max_episode
 
         return self._create_observation(self.info["time_index"])[0], reward, done, self.info
 
@@ -216,6 +226,8 @@ class RealContactControlEnv(ContactControlEnv):
                  goal_trajectory):
         super().__init__(goal_trajectory=goal_trajectory,
                          visualization=False,
+                         evaluation=False,
+                         randomization=False,
                          robot_type='real')
         self.max_episode = task.EPISODE_LENGTH
 
@@ -280,7 +292,8 @@ class RealContactControlEnv(ContactControlEnv):
 
 if __name__ == '__main__':
     env = ContactControlEnv(goal_trajectory=None,
-                            visualization=True)
+                            visualization=True,
+                            randomization=False)
 
     observation = env.reset()
     is_done = False

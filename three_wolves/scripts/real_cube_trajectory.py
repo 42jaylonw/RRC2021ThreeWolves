@@ -11,7 +11,7 @@ def main():
         goal_trajectory = json.loads(goal_json)
     except IndexError:
         goal_trajectory = None
-    env = contact_cube_env.RealContactControlEnv(goal_trajectory=goal_trajectory)
+    env = contact_cube_env.RealPhaseControlEnv(goal_trajectory=goal_trajectory)
     log_filename = f"/userhome/position_model.zip"
     policy = SAC.load(log_filename)
 
