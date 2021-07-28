@@ -6,7 +6,7 @@ class CubeContactMap:
     # only for square: length==width==height
     # four faces: 0 1 2 3
     # default face 0: (0, -w)
-    def __init__(self, width, center=0.6):
+    def __init__(self, width, center=0.5):
         self.width = width
         self.center_offset = width * (1 - center) / 2
 
@@ -73,10 +73,10 @@ class CubeContactMap:
 
 class ContactPlanner:
     def __init__(self, cube_width=0.065):
-        self.contact_map = CubeContactMap(cube_width)
+        self.contact_map = CubeContactMap(cube_width, 0.5)
 
         tip_0_x_bound = [0.25, 0.74]  # tip 0: face 1, 2
-        tip_1_x_bound = [0.00, 0.24]  # tip 1: face 0, 1
+        tip_1_x_bound = [0.00, 0.49]  # tip 1: face 0, 1
         tip_2_x_bound = [0.75, 0.99]  # tip 2: face 3
 
         tips_y_bound = [0.00, 0.99]

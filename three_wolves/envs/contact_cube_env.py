@@ -211,7 +211,8 @@ class ContactControlEnv(BaseCubeTrajectoryEnv):
         return self._create_observation(self.info["time_index"])[0], reward, done, self.info
 
     def Dropped(self):
-        tip_touch = self.observer.dt['tip_force'] > 0
+        print(self.observer.dt['tip_force'])
+        tip_touch = self.observer.dt['tip_force'] > 0.1
         cube_pos = np.array(self.observer.dt['object_position'])
         tri_distance = [reward_utils.ComputeDist(self.observer.dt['tip_0_position'], cube_pos),
                         reward_utils.ComputeDist(self.observer.dt['tip_1_position'], cube_pos),
