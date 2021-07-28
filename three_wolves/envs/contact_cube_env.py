@@ -16,7 +16,7 @@ class ContactControlEnv(BaseCubeTrajectoryEnv):
     def render(self, mode='human'):
         pass
 
-    def __init__(self, goal_trajectory, visualization, randomization, evaluation=False, history_num=1, robot_type='sim'):
+    def __init__(self, goal_trajectory, visualization, randomization=False, evaluation=False, history_num=1, robot_type='sim'):
         super(ContactControlEnv, self).__init__(
             goal_trajectory=goal_trajectory,
             action_type=ActionType.POSITION,
