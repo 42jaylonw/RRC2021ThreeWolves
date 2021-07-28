@@ -55,7 +55,7 @@ class PositionController:
 
         return beta
 
-    def tips_reach(self, apply_action):
+    def tips_reach(self, apply_action, tip_force_offset):
         s = 2
         pre_finger_scale = np.array([[1, s, 1],
                                      [s, 1, 1],
@@ -69,6 +69,9 @@ class PositionController:
         key_points = [P0, P1, P2, P3]
         key_interval = np.array([0.2, 0.2, 0.2, 0.3])*self.reach_time
         for points, interval in zip(key_points, key_interval):
+            if (points == P2).all() and tip_force_offset == []:
+                tip_force_offset.append(self.observer.dt['tip_force'])
+                print(self.observer.dt['tip_force'])
             _clip_yaw = self._get_clip_yaw()
             rotated_key_pos = np.array([trajectory.Rotate([0, 0, _clip_yaw], points[i]) for i in range(3)])
             tar_tip_pos = self.observer.dt['object_position'] + rotated_key_pos

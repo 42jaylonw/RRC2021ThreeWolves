@@ -30,6 +30,7 @@ class ContactControlEnv(BaseCubeTrajectoryEnv):
         self.position_controller = position_controller.PositionController(self.kinematics,
                                                                           self.observer, self.step_size)
         self.max_episode = task.EPISODE_LENGTH
+        self.tip_force_offset = []
         # create observation space
         spaces = TriFingerPlatform.spaces
         self.observation_space = gym.spaces.Box(
@@ -62,8 +63,8 @@ class ContactControlEnv(BaseCubeTrajectoryEnv):
         )
         # initialize cube at the centre
         _random_obj_xy_pos = np.random.uniform(
-            low=[-0.06] * 2,
-            high=[0.06] * 2,
+            low=[-0.04] * 2,
+            high=[0.04] * 2,
         )
         _random_obj_yaw_ori = np.random.uniform(-2 * np.pi, 2 * np.pi)
         _random_obj_yaw_ori = pybullet.getQuaternionFromEuler([0, 0, _random_obj_yaw_ori])
@@ -106,6 +107,7 @@ class ContactControlEnv(BaseCubeTrajectoryEnv):
         self.info = {"time_index": -1, "trajectory": trajectory, "eval_score": 0}
         self.step_count = 0
         self.drop_times = 0
+        self.tip_force_offset = []
 
         # initial step
         robot_action = self._gym_action_to_robot_action(self._initial_action)
@@ -193,10 +195,10 @@ class ContactControlEnv(BaseCubeTrajectoryEnv):
 
     def step(self, policy_action):
         self.update(policy_action)
-        self.position_controller.tips_reach(self.apply_action)
+        self.position_controller.tips_reach(self.apply_action, self.tip_force_offset)
         reward = 0
         while not self.Dropped() and not self.step_count >= self.max_episode:
-            if list(self._last_goal) != list(self.observer.dt['goal_position']):
+            if (self._last_goal != self.observer.dt['goal_position']).all():
                 self.update(policy_action)
             cur_phase_action = self.position_controller.get_action()
             self.apply_action(cur_phase_action)
@@ -211,13 +213,12 @@ class ContactControlEnv(BaseCubeTrajectoryEnv):
         return self._create_observation(self.info["time_index"])[0], reward, done, self.info
 
     def Dropped(self):
-        print(self.observer.dt['tip_force'])
-        tip_touch = self.observer.dt['tip_force'] > 0.1
+        tip_touch = np.subtract(self.observer.dt['tip_force'], self.tip_force_offset[0]) > 0
         cube_pos = np.array(self.observer.dt['object_position'])
         tri_distance = [reward_utils.ComputeDist(self.observer.dt['tip_0_position'], cube_pos),
                         reward_utils.ComputeDist(self.observer.dt['tip_1_position'], cube_pos),
                         reward_utils.ComputeDist(self.observer.dt['tip_2_position'], cube_pos)]
-        is_dropped = np.sum(tip_touch) < 2 or any(np.array(tri_distance) > 0.7)
+        is_dropped = np.sum(tip_touch) < 2 or any(np.array(tri_distance) > 0.07)
         return is_dropped
 
 
@@ -248,7 +249,7 @@ class RealContactControlEnv(ContactControlEnv):
             )
 
         self.update(policy_action)
-        self.position_controller.tips_reach(self.apply_action)
+        self.position_controller.tips_reach(self.apply_action, self.tip_force_offset)
         reward = 0
         while not self.Dropped() and not self.step_count >= self.max_episode:
             if list(self._last_goal) != list(self.observer.dt['goal_position']):

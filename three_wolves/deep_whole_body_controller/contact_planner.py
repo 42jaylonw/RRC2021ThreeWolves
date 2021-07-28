@@ -12,7 +12,7 @@ class CubeContactMap:
 
         self.flat_width = width * center
         # _center_offset =
-        tip_thickness = 0.005
+        tip_thickness = 0.00
         self.FaceToCube = [
             lambda x, y: (-width / 2 + x, -width / 2-tip_thickness, -width / 2 + y),
             lambda x, y: (width / 2+tip_thickness, -width / 2 + x, -width / 2 + y),
@@ -73,7 +73,7 @@ class CubeContactMap:
 
 class ContactPlanner:
     def __init__(self, cube_width=0.065):
-        self.contact_map = CubeContactMap(cube_width, 0.5)
+        self.contact_map = CubeContactMap(cube_width)   # 0.5
 
         tip_0_x_bound = [0.25, 0.74]  # tip 0: face 1, 2
         tip_1_x_bound = [0.00, 0.49]  # tip 1: face 0, 1
