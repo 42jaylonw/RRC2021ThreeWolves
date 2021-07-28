@@ -69,7 +69,7 @@ class PositionController:
         key_points = [P0, P1, P2, P3]
         key_interval = np.array([0.2, 0.2, 0.2, 0.3])*self.reach_time
         for points, interval in zip(key_points, key_interval):
-            if (points == P2).all() and tip_force_offset == []:
+            if (points == P1).all() and tip_force_offset == []:
                 tip_force_offset.append(self.observer.dt['tip_force'])
                 print(self.observer.dt['tip_force'])
             _clip_yaw = self._get_clip_yaw()
@@ -82,7 +82,7 @@ class PositionController:
         tg = trajectory.get_path_planner(init_pos=init_tip_pos,
                                          tar_pos=tar_tip_pos.flatten(),
                                          start_time=0,
-                                         reach_time=total_time)
+                                         reach_time=total_time*0.8)
         t = 0
         while t < total_time:
             tg_tip_pos = tg(t)

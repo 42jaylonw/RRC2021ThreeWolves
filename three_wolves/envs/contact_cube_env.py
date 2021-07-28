@@ -218,7 +218,7 @@ class ContactControlEnv(BaseCubeTrajectoryEnv):
         tri_distance = [reward_utils.ComputeDist(self.observer.dt['tip_0_position'], cube_pos),
                         reward_utils.ComputeDist(self.observer.dt['tip_1_position'], cube_pos),
                         reward_utils.ComputeDist(self.observer.dt['tip_2_position'], cube_pos)]
-        is_dropped = np.sum(tip_touch) < 2 or any(np.array(tri_distance) > 0.07)
+        is_dropped = np.sum(tip_touch) < 2 or any(np.array(tri_distance) > 0.12)
         return is_dropped
 
 
