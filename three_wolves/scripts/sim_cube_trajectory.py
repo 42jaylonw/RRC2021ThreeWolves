@@ -1,8 +1,12 @@
 #!/usr/bin/python3
 import sys
 import json
-from three_wolves.envs import contact_cube_env
+from three_wolves.envs import phase_cube_env, position_cube_env
 from stable_baselines3 import SAC
+
+class M:
+    def __init__(self, model_name='tg'):
+        self.model_name = model_name
 
 def main():
     # the goal is passed as JSON string
@@ -11,9 +15,11 @@ def main():
         goal_trajectory = json.loads(goal_json)
     except IndexError:
         goal_trajectory = None
-    env = contact_cube_env.ContactControlEnv(goal_trajectory=goal_trajectory,
-                                             visualization=False)
-    log_filename = f"/userhome/position_model.zip"
+    model = M()
+    env = phase_cube_env.PhaseControlEnv(goal_trajectory=goal_trajectory,
+                                         visualization=False,
+                                         args=model)
+    log_filename = f"/userhome/{model.model_name}.zip"
     policy = SAC.load(log_filename)
 
     observation = env.reset()

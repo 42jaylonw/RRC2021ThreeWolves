@@ -61,12 +61,13 @@ class PositionController:
                                      [s, 1, 1],
                                      [1, s, 1],
                                      [s, 1, 1]])[self.contact_face_ids]
-        P0 = self.desired_contact_points * pre_finger_scale + [0, 0, 0.05]
-        P1 = self.desired_contact_points * pre_finger_scale
-        P2 = self.desired_contact_points
+        P0 = np.array([list(self.observer.dt[f'tip_{i}_position'][:2]) + [0.08] for i in range(3)])
+        P1 = self.desired_contact_points * pre_finger_scale + [0, 0, 0.05]
+        P2 = self.desired_contact_points * pre_finger_scale
+        P3 = self.desired_contact_points
 
-        key_points = [P0, P1, P2]
-        key_interval = np.array([0.3, 0.2, 0.5])*self.reach_time
+        key_points = [P0, P1, P2, P3]
+        key_interval = np.array([0.2, 0.2, 0.2, 0.3])*self.reach_time
         for points, interval in zip(key_points, key_interval):
             _clip_yaw = self._get_clip_yaw()
             rotated_key_pos = np.array([trajectory.Rotate([0, 0, _clip_yaw], points[i]) for i in range(3)])

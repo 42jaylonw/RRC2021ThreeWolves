@@ -16,7 +16,7 @@ class ContactControlEnv(BaseCubeTrajectoryEnv):
     def render(self, mode='human'):
         pass
 
-    def __init__(self, goal_trajectory, visualization, randomization=False, evaluation=False, history_num=1, robot_type='sim'):
+    def __init__(self, goal_trajectory, visualization, randomization, evaluation=False, history_num=1, robot_type='sim'):
         super(ContactControlEnv, self).__init__(
             goal_trajectory=goal_trajectory,
             action_type=ActionType.POSITION,
@@ -106,13 +106,6 @@ class ContactControlEnv(BaseCubeTrajectoryEnv):
         self.info = {"time_index": -1, "trajectory": trajectory, "eval_score": 0}
         self.step_count = 0
         self.drop_times = 0
-
-        # initial step
-        robot_action = self._gym_action_to_robot_action(self._initial_action)
-        self.platform.append_desired_action(robot_action)
-        self.info["time_index"] += 1
-        self.step_count += 1
-        self.tip_force_offset = self.platform.get_robot_observation(0).tip_force
         obs, _ = self._create_observation(0)
         return obs
 
@@ -130,7 +123,7 @@ class ContactControlEnv(BaseCubeTrajectoryEnv):
             "joint_position": robot_observation.position,  # joint position
             "joint_velocity": robot_observation.velocity,  # joint velocity
             "joint_torque": robot_observation.torque,  # joint torque
-            "tip_force": np.subtract(robot_observation.tip_force, self.tip_force_offset),  # tip force
+            "tip_force": robot_observation.tip_force,  # tip force
 
             "object_position": cube_pos,  # cube position
             "object_rpy": cube_orn,  # cube orientation
@@ -212,12 +205,12 @@ class ContactControlEnv(BaseCubeTrajectoryEnv):
         return self._create_observation(self.info["time_index"])[0], reward, done, self.info
 
     def Dropped(self):
-        tip_force = self.observer.dt['tip_force']
+        tip_touch = self.observer.dt['tip_force'] > 0.1
         cube_pos = np.array(self.observer.dt['object_position'])
         tri_distance = [reward_utils.ComputeDist(self.observer.dt['tip_0_position'], cube_pos),
                         reward_utils.ComputeDist(self.observer.dt['tip_1_position'], cube_pos),
                         reward_utils.ComputeDist(self.observer.dt['tip_2_position'], cube_pos)]
-        is_dropped = list(tip_force).count(0.) > 1 or any(np.array(tri_distance) > 0.7)
+        is_dropped = np.sum(tip_touch) < 2 or any(np.array(tri_distance) > 0.7)
         return is_dropped
 
 
@@ -279,13 +272,6 @@ class RealContactControlEnv(ContactControlEnv):
 
         self.info = {"time_index": -1, "trajectory": trajectory}
         self.step_count = 0
-
-        # initial step
-        robot_action = self._gym_action_to_robot_action(self._initial_action)
-        self.platform.append_desired_action(robot_action)
-        self.info["time_index"] += 1
-        self.step_count += 1
-        self.tip_force_offset = self.platform.get_robot_observation(0).tip_force
         obs, _ = self._create_observation(0)
         return obs
 
