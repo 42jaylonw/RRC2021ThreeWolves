@@ -79,15 +79,26 @@ def compute_fifth_polynomial_trajectory(t, T):
 
 
 def get_path_planner(init_pos, tar_pos, start_time, reach_time):
+    """Get a fifth order trajectory generator
+
+  Args:
+    init_pos: Initial position
+    tar_pos: Target position
+    start_time: Starting time
+    reach_time: End time
+
+  Returns:
+    A function that output: position at current time, bool value for reach the target
+  """
     dist = tar_pos - init_pos
 
     def tg(cur_time):
         t = cur_time - start_time
         T = reach_time - start_time
         if t <= T:
-            return init_pos + compute_fifth_polynomial_trajectory(t, T)[0] * dist
+            return init_pos + compute_fifth_polynomial_trajectory(t, T)[0] * dist, False
         else:
-            return tar_pos
+            return tar_pos, t > T + 0.1     # for camera observation frequency
 
     return tg
 

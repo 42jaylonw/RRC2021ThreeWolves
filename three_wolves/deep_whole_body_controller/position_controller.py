@@ -19,6 +19,7 @@ class PositionController:
         self.contact_face_ids = None
         self.desired_speed = 0.1
         self.reach_time = 4.0
+        self.complement = False
 
     def reset(self):
         pass
@@ -27,20 +28,30 @@ class PositionController:
         obj_goal_dist = reward_utils.ComputeDist(init_pos, tar_pos)
         total_time = obj_goal_dist / self.desired_speed
         self.t = 0
-        self.tg = trajectory.get_acc_planner(init_pos=init_pos,
-                                             tar_pos=tar_pos,
-                                             start_time=0,
-                                             reach_time=total_time)
+        self.tg = trajectory.get_path_planner(init_pos=init_pos,
+                                              tar_pos=tar_pos,
+                                              start_time=0,
+                                              reach_time=total_time)
 
     def update(self, contact_points, contact_face_ids):
         self.contact_face_ids = contact_face_ids
         self.desired_contact_points = contact_points
         self.reset_tg(self.observer.dt['object_position'], self.observer.dt['goal_position'])
+        self.complement = False
 
     def get_action(self):
+        # first trajectory
         desired_position = self.tg(self.t)[0] + self.desired_contact_points
         desired_joint_position, _ = self.kinematics.inverse_kinematics(desired_position,
                                                                        self.observer.dt['joint_position'])
+        # complement trajectory
+        if not self.complement and self.tg(self.t)[1]:
+            goal_residual = self.observer.dt['goal_position'] - self.observer.dt['object_position']
+            # self.desired_contact_points += goal_residual
+            self.reset_tg(self.observer.dt['object_position'], self.observer.dt['goal_position'] + goal_residual)
+            self.complement = True
+
+
         self.t += 0.001 * self.step_size
         return desired_joint_position
 
@@ -67,11 +78,10 @@ class PositionController:
         P3 = self.desired_contact_points
 
         key_points = [P0, P1, P2, P3]
-        key_interval = np.array([0.2, 0.2, 0.2, 0.3])*self.reach_time
+        key_interval = np.array([0.2, 0.2, 0.2, 0.3]) * self.reach_time
         for points, interval in zip(key_points, key_interval):
             if (points == P1).all() and tip_force_offset == []:
                 tip_force_offset.append(self.observer.dt['tip_force'])
-                print(self.observer.dt['tip_force'])
             _clip_yaw = self._get_clip_yaw()
             rotated_key_pos = np.array([trajectory.Rotate([0, 0, _clip_yaw], points[i]) for i in range(3)])
             tar_tip_pos = self.observer.dt['object_position'] + rotated_key_pos
@@ -82,10 +92,10 @@ class PositionController:
         tg = trajectory.get_path_planner(init_pos=init_tip_pos,
                                          tar_pos=tar_tip_pos.flatten(),
                                          start_time=0,
-                                         reach_time=total_time*0.8)
+                                         reach_time=total_time * 0.8)
         t = 0
         while t < total_time:
-            tg_tip_pos = tg(t)
+            tg_tip_pos = tg(t)[0]
             arm_joi_pos = self.observer.dt['joint_position']
             to_goal_joints, _error = self.kinematics.inverse_kinematics(tg_tip_pos.reshape(3, 3),
                                                                         arm_joi_pos)
