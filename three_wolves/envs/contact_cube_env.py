@@ -114,7 +114,7 @@ class ContactControlEnv(BaseCubeTrajectoryEnv):
         t = self.platform.append_desired_action(robot_action)
         self.info["time_index"] = t
         self.step_count += 1
-        obs, _ = self._create_observation(0)
+        obs, _ = self._create_observation(self.info["time_index"])
         return obs
 
     def _create_observation(self, t):
@@ -286,7 +286,7 @@ class RealContactControlEnv(ContactControlEnv):
         t = self.platform.append_desired_action(robot_action)
         self.info["time_index"] = t
         self.step_count += 1
-        obs, _ = self._create_observation(0)
+        obs, _ = self._create_observation(self.info["time_index"])
         return obs
 
 
