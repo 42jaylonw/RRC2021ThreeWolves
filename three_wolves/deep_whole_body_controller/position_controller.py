@@ -72,8 +72,8 @@ class PositionController:
                                      [s, 1, 1],
                                      [1, s, 1],
                                      [s, 1, 1]])[self.contact_face_ids]
-        P0 = np.array([list(self.observer.dt[f'tip_{i}_position'][:2]) + [0.08] for i in range(3)])
-        P1 = self.desired_contact_points * pre_finger_scale + [0, 0, 0.05]
+        P0 = np.array([list(self.observer.dt[f'tip_{i}_position'][:2]) + [0.1] for i in range(3)])
+        P1 = self.desired_contact_points * pre_finger_scale + [0, 0, 0.07]
         P2 = self.desired_contact_points * pre_finger_scale
         P3 = self.desired_contact_points
 
