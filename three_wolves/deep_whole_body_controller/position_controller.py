@@ -17,16 +17,15 @@ class PositionController:
         self.tg = None
         self.desired_contact_points = None
         self.contact_face_ids = None
-        self.desired_speed = 0.1
-        self.reach_time = 4.0
+        self.reach_time = 5.0
         self.complement = False
 
     def reset(self):
         pass
 
-    def reset_tg(self, init_pos, tar_pos):
+    def reset_tg(self, init_pos, tar_pos, desired_speed=0.1):
         obj_goal_dist = reward_utils.ComputeDist(init_pos, tar_pos)
-        total_time = obj_goal_dist / self.desired_speed
+        total_time = obj_goal_dist / desired_speed
         self.t = 0
         self.tg = trajectory.get_path_planner(init_pos=init_pos,
                                               tar_pos=tar_pos,
@@ -48,9 +47,8 @@ class PositionController:
         if not self.complement and self.tg(self.t)[1]:
             goal_residual = self.observer.dt['goal_position'] - self.observer.dt['object_position']
             # self.desired_contact_points += goal_residual
-            self.reset_tg(self.observer.dt['object_position'], self.observer.dt['goal_position'] + goal_residual)
+            self.reset_tg(self.observer.dt['object_position'], self.observer.dt['goal_position'] + goal_residual, 0.03)
             self.complement = True
-
 
         self.t += 0.001 * self.step_size
         return desired_joint_position
@@ -67,7 +65,7 @@ class PositionController:
         return beta
 
     def tips_reach(self, apply_action, tip_force_offset):
-        s = 3
+        s = 2.5
         pre_finger_scale = np.array([[1, s, 1],
                                      [s, 1, 1],
                                      [1, s, 1],
@@ -78,7 +76,7 @@ class PositionController:
         P3 = self.desired_contact_points
 
         key_points = [P0, P1, P2, P3]
-        key_interval = np.array([0.2, 0.2, 0.2, 0.3]) * self.reach_time
+        key_interval = np.array([0.2, 0.2, 0.3, 0.3]) * self.reach_time
         for points, interval in zip(key_points, key_interval):
             if (points == P1).all() and tip_force_offset == []:
                 tip_force_offset.append(self.observer.dt['tip_force'])
