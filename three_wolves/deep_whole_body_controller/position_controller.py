@@ -67,7 +67,7 @@ class PositionController:
         return beta
 
     def tips_reach(self, apply_action, tip_force_offset):
-        s = 2
+        s = 3
         pre_finger_scale = np.array([[1, s, 1],
                                      [s, 1, 1],
                                      [1, s, 1],
