@@ -243,11 +243,6 @@ class RealContactControlEnv(ContactControlEnv):
         if self.platform is None:
             raise RuntimeError("Call `reset()` before starting to step.")
 
-        if not self.action_space.contains(policy_action):
-            raise ValueError(
-                "Given action is not contained in the action space."
-            )
-
         self.update(policy_action)
         self.position_controller.tips_reach(self.apply_action, self.tip_force_offset)
         reward = 0
