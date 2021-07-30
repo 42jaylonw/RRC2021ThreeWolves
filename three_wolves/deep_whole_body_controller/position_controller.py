@@ -17,7 +17,7 @@ class PositionController:
         self.tg = None
         self.desired_contact_points = None
         self.contact_face_ids = None
-        self.reach_time = 5.0
+        self.reach_time = 4.0
         self.complement = False
 
     def reset(self):

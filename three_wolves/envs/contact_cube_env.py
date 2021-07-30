@@ -277,11 +277,13 @@ class RealContactControlEnv(ContactControlEnv):
         self.step_count = 0
 
         # initial step
-        robot_action = self._gym_action_to_robot_action(self._initial_action)
-        t = self.platform.append_desired_action(robot_action)
-        self.info["time_index"] = t
-        self.step_count += 1
-        obs, _ = self._create_observation(self.info["time_index"])
+        for i in range(int(0.3/(0.001*self.step_size))):
+            robot_action = self._gym_action_to_robot_action(self._initial_action)
+            t = self.platform.append_desired_action(robot_action)
+            self.info["time_index"] = t
+            self.step_count += 1
+            obs, _ = self._create_observation(self.info["time_index"])
+
         return obs
 
 
