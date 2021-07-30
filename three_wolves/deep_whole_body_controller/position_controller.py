@@ -44,11 +44,11 @@ class PositionController:
         desired_joint_position, _ = self.kinematics.inverse_kinematics(desired_position,
                                                                        self.observer.dt['joint_position'])
         # complement trajectory
-        if not self.complement and self.tg(self.t)[1]:
-            goal_residual = self.observer.dt['goal_position'] - self.observer.dt['object_position']
-            # self.desired_contact_points += goal_residual
-            self.reset_tg(self.observer.dt['object_position'], self.observer.dt['goal_position'] + goal_residual, 0.03)
-            self.complement = True
+        # if not self.complement and self.tg(self.t)[1]:
+        #     goal_residual = self.observer.dt['goal_position'] - self.observer.dt['object_position']
+        #     # self.desired_contact_points += goal_residual
+        #     self.reset_tg(self.observer.dt['object_position'], self.observer.dt['goal_position'] + goal_residual, 0.03)
+        #     self.complement = True
 
         self.t += 0.001 * self.step_size
         return desired_joint_position
