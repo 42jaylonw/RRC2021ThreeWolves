@@ -17,7 +17,7 @@ class PositionController:
         self.tg = None
         self.desired_contact_points = None
         self.contact_face_ids = None
-        self.reach_time = 5.0
+        self.reach_time = 4.0
         self.complement = False
 
     def reset(self):
@@ -44,11 +44,11 @@ class PositionController:
         desired_joint_position, _ = self.kinematics.inverse_kinematics(desired_position,
                                                                        self.observer.dt['joint_position'])
         # complement trajectory
-        # if not self.complement and self.tg(self.t)[1]:
-        #     goal_residual = self.observer.dt['goal_position'] - self.observer.dt['object_position']
-        #     # self.desired_contact_points += goal_residual
-        #     self.reset_tg(self.observer.dt['object_position'], self.observer.dt['goal_position'] + goal_residual, 0.03)
-        #     self.complement = True
+        if not self.complement and self.tg(self.t)[1]:
+            goal_residual = self.observer.dt['goal_position'] - self.observer.dt['object_position']
+            # self.desired_contact_points += goal_residual
+            self.reset_tg(self.observer.dt['object_position'], self.observer.dt['goal_position'] + goal_residual, 0.05)
+            self.complement = True
 
         self.t += 0.001 * self.step_size
         return desired_joint_position
@@ -65,13 +65,13 @@ class PositionController:
         return beta
 
     def tips_reach(self, apply_action, tip_force_offset):
-        s = 2.5
+        s = 2
         pre_finger_scale = np.array([[1, s, 1],
                                      [s, 1, 1],
                                      [1, s, 1],
                                      [s, 1, 1]])[self.contact_face_ids]
-        P0 = np.array([list(self.observer.dt[f'tip_{i}_position'][:2]) + [0.1] for i in range(3)])
-        P1 = self.desired_contact_points * pre_finger_scale + [0, 0, 0.07]
+        P0 = np.array([list(self.observer.dt[f'tip_{i}_position'][:2]) + [0.08] for i in range(3)])
+        P1 = self.desired_contact_points * pre_finger_scale + [0, 0, 0.05]
         P2 = self.desired_contact_points * pre_finger_scale
         P3 = self.desired_contact_points
 

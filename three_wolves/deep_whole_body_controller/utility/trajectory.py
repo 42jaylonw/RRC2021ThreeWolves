@@ -98,7 +98,7 @@ def get_path_planner(init_pos, tar_pos, start_time, reach_time):
         if t <= T:
             return init_pos + compute_fifth_polynomial_trajectory(t, T)[0] * dist, False
         else:
-            return tar_pos, t > T + 1.     # for camera observation frequency
+            return tar_pos, t > T + 0.3     # for camera observation frequency
 
     return tg
 
