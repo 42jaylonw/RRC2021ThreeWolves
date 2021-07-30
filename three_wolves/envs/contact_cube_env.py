@@ -20,7 +20,7 @@ class ContactControlEnv(BaseCubeTrajectoryEnv):
         super(ContactControlEnv, self).__init__(
             goal_trajectory=goal_trajectory,
             action_type=ActionType.POSITION,
-            step_size=5)
+            step_size=2)
         self.visualization = visualization
         self.randomization = randomization
         self.evaluation = evaluation
