@@ -277,7 +277,7 @@ class RealContactControlEnv(ContactControlEnv):
         self.step_count = 0
 
         # initial step
-        for i in range(int(0.3/(0.001*self.step_size))):
+        for i in range(int(1./(0.001*self.step_size))):
             robot_action = self._gym_action_to_robot_action(self._initial_action)
             t = self.platform.append_desired_action(robot_action)
             self.info["time_index"] = t
